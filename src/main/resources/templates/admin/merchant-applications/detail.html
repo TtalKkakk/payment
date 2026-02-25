@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가맹점 신청 상세 - 관리자</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f5f5f5; padding: 2rem; color: #1a1a1a; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .card { background: #fff; border-radius: 8px; padding: 2rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        h1 { margin-bottom: 1.5rem; font-size: 1.375rem; }
+        .field { margin-bottom: 1rem; }
+        .field-label { font-size: 0.8125rem; color: #666; margin-bottom: 0.25rem; }
+        .field-value { font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .field-value-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .status { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem; }
+        .status-PENDING { background: #fff3e0; color: #e65100; }
+        .status-APPROVED { background: #e8f5e9; color: #2e7d32; }
+        .status-REJECTED { background: #ffebee; color: #c62828; }
+        .status-CANCELLED { background: #eceff1; color: #546e7a; }
+        .status-SUBSCRIPTION_ENDED { background: #e3f2fd; color: #1565c0; }
+        .actions { margin-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+        .btn { padding: 0.75rem 1.25rem; border: none; border-radius: 6px; font-size: 0.9375rem; cursor: pointer; text-decoration: none; display: inline-block; font-family: inherit; }
+        .btn-approve { background: #2e7d32; color: #fff; }
+        .btn-approve:hover { background: #1b5e20; }
+        .btn-reject { background: #c62828; color: #fff; }
+        .btn-reject:hover { background: #b71c1c; }
+        .btn-back { background: #e5e5e5; color: #1a1a1a; }
+        .btn-back:hover { background: #d1d1d1; }
+        .reject-form { margin-top: 1rem; }
+        .reject-form input { width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+        .message { padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; }
+        .message.success { background: #e8f5e9; color: #2e7d32; }
+        .message.error { background: #ffebee; color: #c62828; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: #fff; border-radius: 12px; padding: 1.5rem; min-width: 320px; max-width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+        .modal h3 { margin-bottom: 1rem; font-size: 1.125rem; }
+        .modal input, .modal textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9375rem; margin-bottom: 1rem; font-family: inherit; }
+        .modal textarea { min-height: 80px; resize: vertical; }
+        .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+        .modal-actions .btn { padding: 0.5rem 1rem; font-size: 0.875rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div style="margin-bottom: 1rem;">
+        <a th:href="@{/admin/merchant-applications}" class="btn btn-back">← 목록</a>
+        <form th:action="@{/admin/logout}" method="post" style="display:inline; margin-left:0.5rem;">
+            <input th:if="${_csrf != null}" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <button type="submit" style="background:none;border:none;color:#1565c0;font-size:0.875rem;cursor:pointer;padding:0.5rem 0;">로그아웃</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h1>가맹점 신청 상세</h1>
+
+        <div th:if="${message}" class="message success" th:text="${message}"></div>
+        <div th:if="${error}" class="message error" th:text="${error}"></div>
+
+        <span th:class="${merchantApplication.status != null ? 'status status-' + merchantApplication.status.name() : 'status'}" th:text="${merchantApplication.status != null ? merchantApplication.status.name() : '-'}"></span>
+
+        <div class="field">
+            <div class="field-label">가맹점명</div>
+            <div class="field-value field-value-name" th:text="${merchantApplication.name}"></div>
+        </div>
+        <div class="field">
+            <div class="field-label">사업자번호</div>
+            <div class="field-value" th:text="${merchantApplication.businessNumber}"></div>
+        </div>
+        <div class="field">
+            <div class="field-label">연락처</div>
+            <div class="field-value" th:text="${merchantApplication.contactPhone}"></div>
+        </div>
+        <div class="field">
+            <div class="field-label">이메일</div>
+            <div class="field-value" th:text="${merchantApplication.contactEmail}"></div>
+        </div>
+        <div class="field" th:if="${merchantApplication.rejectReason != null and !merchantApplication.rejectReason.isEmpty()}">
+            <div class="field-label">거절 사유</div>
+            <div class="field-value" th:text="${merchantApplication.rejectReason}"></div>
+        </div>
+        <div class="field">
+            <div class="field-label">신청일시</div>
+            <div class="field-value" th:text="${merchantApplication.createdAt != null ? #temporals.format(merchantApplication.createdAt, 'yyyy-MM-dd HH:mm:ss') : '-'}"></div>
+        </div>
+
+        <div th:if="${merchantApplication.status != null and merchantApplication.status.name() == 'PENDING'}" class="actions">
+            <form th:action="@{/admin/merchant-applications/{id}/approve(id=${merchantApplication.id})}" method="post" style="display:inline;">
+                <button type="submit" class="btn btn-approve">승인</button>
+            </form>
+            <button type="button" class="btn btn-reject" id="btnRejectOpen">거절</button>
+        </div>
+    </div>
+</div>
+
+<!-- 거절 사유 모달 -->
+<div class="modal-overlay" id="rejectModal" aria-hidden="true">
+    <div class="modal">
+        <h3>거절 사유</h3>
+        <form id="rejectForm" th:action="@{/admin/merchant-applications/{id}/reject(id=${merchantApplication.id})}" method="post">
+            <textarea name="reason" placeholder="거절 사유 (선택)" maxlength="500" id="rejectReason"></textarea>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-back" id="btnRejectCancel">취소</button>
+                <button type="submit" class="btn btn-reject">거절</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+(function() {
+    var modal = document.getElementById('rejectModal');
+    var btnOpen = document.getElementById('btnRejectOpen');
+    var btnCancel = document.getElementById('btnRejectCancel');
+    if (btnOpen) {
+        btnOpen.addEventListener('click', function() { modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); });
+    }
+    if (btnCancel) {
+        btnCancel.addEventListener('click', function() { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); });
+    }
+    modal.addEventListener('click', function(e) { if (e.target === modal) { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); } });
+})();
+</script>
+</body>
+</html>

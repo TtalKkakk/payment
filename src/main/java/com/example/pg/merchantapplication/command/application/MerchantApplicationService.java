@@ -1,5 +1,6 @@
 package com.example.pg.merchantapplication.command.application;
 
+import com.example.pg.merchantapplication.command.application.port.MerchantApplicationPort;
 import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
 import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
 import com.example.pg.merchantapplication.domain.vo.ApplicationName;
@@ -7,6 +8,8 @@ import com.example.pg.merchantapplication.domain.vo.BusinessNumber;
 import com.example.pg.merchantapplication.domain.vo.ContactEmail;
 import com.example.pg.merchantapplication.domain.vo.ContactPhone;
 import com.example.pg.merchantapplication.domain.vo.PasswordHash;
+import com.example.pg.merchantapplication.domain.event.MerchantApplicationApprovedEvent;
+import com.example.pg.merchantapplication.domain.event.MerchantApplicationRejectedEvent;
 import com.example.pg.merchantapplication.domain.event.MerchantApplicationSubmittedEvent;
 import com.example.pg.merchantapplication.infrastructure.persistence.MerchantApplicationRepository;
 import com.example.pg.exception.BusinessException;
@@ -24,6 +27,7 @@ import java.util.List;
 public class MerchantApplicationService {
 
     private final MerchantApplicationRepository merchantApplicationRepository;
+    private final MerchantApplicationPort merchantApplicationPort;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final PasswordEncoder passwordEncoder;
 
@@ -81,5 +85,36 @@ public class MerchantApplicationService {
         }
         application.cancel();
         merchantApplicationRepository.save(application);
+    }
+
+    @Transactional
+    public void approve(String applicationId) {
+        MerchantApplication merchantApplication = merchantApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_APPLICATION_NOT_FOUND, applicationId));
+
+        merchantApplication.approve();
+        merchantApplicationRepository.save(merchantApplication);
+
+        merchantApplicationPort.createFromApprovedApplication(
+                merchantApplication.getId(),
+                merchantApplication.getName()
+        );
+
+        applicationEventPublisher.publishEvent(MerchantApplicationApprovedEvent.from(
+                merchantApplication.getId(),
+                merchantApplication.getName())
+        );
+    }
+
+    @Transactional
+    public void reject(String applicationId, String reason) {
+        MerchantApplication merchantApplication = merchantApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_APPLICATION_NOT_FOUND, applicationId));
+
+        merchantApplication.reject(reason);
+        merchantApplicationRepository.save(merchantApplication);
+
+        applicationEventPublisher.publishEvent(MerchantApplicationRejectedEvent.from(
+                merchantApplication.getId(), merchantApplication.getName(), reason));
     }
 }
