@@ -1,0 +1,9 @@
+# <type>(<scope>): <subject>
+#
+# [optional body]
+# [optional footer]
+#
+# type: feat | fix | docs | style | refactor | test | chore
+# scope: 도메인/모듈 (예: merchant, card, payment)
+# subject: 50자 이내, 명령형 (과거형 X)
+# footer: BREAKING CHANGE, Closes #이슈번호
