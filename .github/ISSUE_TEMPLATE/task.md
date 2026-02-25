@@ -3,7 +3,7 @@ name: 작업 / 태스크
 description: 리팩터링, 설정, 문서 등 기능 외 작업
 title: "[작업] "
 labels: task
-assignees: "작업 / 태스크"
+assignees: ""
 ---
 
 ## 요약

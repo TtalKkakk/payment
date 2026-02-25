@@ -3,7 +3,7 @@ name: 기능 요청
 description: 새 기능 또는 개선 제안
 title: "[기능] "
 labels: enhancement
-assignees: "기능 요청"
+assignees: ""
 ---
 
 ## 요약
