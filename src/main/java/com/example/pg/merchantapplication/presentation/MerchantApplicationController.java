@@ -5,6 +5,7 @@ import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
 import com.example.pg.merchantapplication.presentation.dto.ApplicationStatusRequest;
 import com.example.pg.merchantapplication.presentation.dto.ApplicationStatusResponse;
 import com.example.pg.merchantapplication.presentation.dto.ApplyMerchantRequest;
+import com.example.pg.merchantapplication.presentation.dto.DeleteMerchantApplicationRequest;
 import com.example.pg.merchantapplication.presentation.dto.ApplyMerchantResponse;
 import com.example.pg.merchantapplication.query.application.MerchantApplicationQueryService;
 import jakarta.validation.Valid;
@@ -48,5 +49,15 @@ public class MerchantApplicationController {
         MerchantApplication merchantApplication = merchantApplicationQueryService.getByBusinessNumberAndPassword(
                 request.businessNumber(), request.password());
         return ResponseEntity.ok(ApplicationStatusResponse.from(merchantApplication));
+    }
+
+    /**
+     * 사업자번호 + 비밀번호로 신청 삭제.
+     */
+    @PostMapping("/delete")
+    public ResponseEntity<Void> deleteByBusinessNumberAndPassword(
+            @Valid @RequestBody DeleteMerchantApplicationRequest request) {
+        merchantApplicationService.deleteByBusinessNumberAndPassword(request.businessNumber(), request.password());
+        return ResponseEntity.noContent().build();
     }
 }

@@ -65,4 +65,21 @@ public class MerchantApplicationService {
 
         return merchantApplication;
     }
+
+    /**
+     * 사업자번호 + 비밀번호로 신청 취소. PENDING인 신청만 CANCELLED로 전이.
+     */
+    @Transactional
+    public void deleteByBusinessNumberAndPassword(String businessNumber, String rawPassword) {
+        MerchantApplication application = merchantApplicationRepository.findByBusinessNumber(businessNumber)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_PASSWORD_MISMATCH));
+        if (application.getStatus() != MerchantApplicationStatus.PENDING) {
+            throw new BusinessException(ErrorCode.APPLICATION_ALREADY_PROCESSED, application.getStatus().name());
+        }
+        if (!passwordEncoder.matches(rawPassword, application.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.APPLICATION_PASSWORD_MISMATCH);
+        }
+        application.cancel();
+        merchantApplicationRepository.save(application);
+    }
 }
