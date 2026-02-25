@@ -1,6 +1,7 @@
 ---
 name: 기능 요청
 description: 새 기능 또는 개선 제안
+about: 새 기능 또는 개선 사항을 제안할 때 사용합니다.
 title: "[기능] "
 labels: enhancement
 assignees: ""

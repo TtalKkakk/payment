@@ -1,6 +1,7 @@
 ---
 name: 작업 / 태스크
 description: 리팩터링, 설정, 문서 등 기능 외 작업
+about: 리팩터링, 설정 변경, 문서화 등 기능 개발 외 작업을 등록할 때 사용합니다.
 title: "[작업] "
 labels: task
 assignees: ""
