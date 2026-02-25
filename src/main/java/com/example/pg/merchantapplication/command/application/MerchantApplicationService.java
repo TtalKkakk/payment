@@ -1,0 +1,68 @@
+package com.example.pg.merchantapplication.command.application;
+
+import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
+import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
+import com.example.pg.merchantapplication.domain.vo.ApplicationName;
+import com.example.pg.merchantapplication.domain.vo.BusinessNumber;
+import com.example.pg.merchantapplication.domain.vo.ContactEmail;
+import com.example.pg.merchantapplication.domain.vo.ContactPhone;
+import com.example.pg.merchantapplication.domain.vo.PasswordHash;
+import com.example.pg.merchantapplication.domain.event.MerchantApplicationSubmittedEvent;
+import com.example.pg.merchantapplication.infrastructure.persistence.MerchantApplicationRepository;
+import com.example.pg.exception.BusinessException;
+import com.example.pg.exception.ErrorCode;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class MerchantApplicationService {
+
+    private final MerchantApplicationRepository merchantApplicationRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final PasswordEncoder passwordEncoder;
+
+    @Transactional
+    public MerchantApplication apply(String name, String businessNumber, String contactPhone, String contactEmail, String rawPassword) {
+        if (merchantApplicationRepository.existsByBusinessNumberAndStatusIn(businessNumber,
+                List.of(MerchantApplicationStatus.PENDING, MerchantApplicationStatus.APPROVED))) {
+            throw new BusinessException(ErrorCode.DUPLICATE_BUSINESS_NUMBER);
+        }
+        String passwordHash = passwordEncoder.encode(rawPassword);
+        MerchantApplication merchantApplication = merchantApplicationRepository.findByBusinessNumber(businessNumber)
+                .filter(app -> app.getStatus() == MerchantApplicationStatus.CANCELLED
+                        || app.getStatus() == MerchantApplicationStatus.SUBSCRIPTION_ENDED
+                        || app.getStatus() == MerchantApplicationStatus.REJECTED)
+                .map(app -> {
+                    app.reapply(
+                            ApplicationName.of(name),
+                            ContactPhone.of(contactPhone),
+                            ContactEmail.of(contactEmail),
+                            PasswordHash.of(passwordHash)
+                    );
+                    return app;
+                })
+                .orElseGet(() -> MerchantApplication.create(
+                        ApplicationName.of(name),
+                        BusinessNumber.of(businessNumber),
+                        ContactPhone.of(contactPhone),
+                        ContactEmail.of(contactEmail),
+                        PasswordHash.of(passwordHash)
+                ));
+        merchantApplicationRepository.save(merchantApplication);
+
+        applicationEventPublisher.publishEvent(MerchantApplicationSubmittedEvent.from(
+                merchantApplication.getId(),
+                merchantApplication.getName(),
+                merchantApplication.getBusinessNumber(),
+                merchantApplication.getContactEmail())
+        );
+
+        return merchantApplication;
+    }
+}
