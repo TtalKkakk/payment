@@ -3,7 +3,7 @@ name: 버그 리포트
 description: 잘못된 동작 또는 오류 보고
 title: "[버그] "
 labels: bug
-assignees: ""
+assignees: "버그"
 ---
 
 ## 요약
