@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가맹점 목록 - 관리자</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f5f5f5; padding: 2rem; color: #1a1a1a; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { margin-bottom: 1.5rem; font-size: 1.5rem; }
+        table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); table-layout: fixed; }
+        th, td { padding: 0.875rem 1rem; text-align: left; border-bottom: 1px solid #eee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        th { background: #fafafa; font-weight: 600; font-size: 0.8125rem; }
+        tr:hover { background: #fafafa; }
+        .col-name { max-width: 180px; }
+        .col-actions { overflow: visible; white-space: normal; text-overflow: clip; }
+        .status { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
+        .status-ACTIVE { background: #e8f5e9; color: #2e7d32; }
+        .status-SUSPENDED { background: #fff3e0; color: #e65100; }
+        .status-WITHDRAWN { background: #eceff1; color: #546e7a; }
+        a { color: #1a1a1a; }
+        .empty { padding: 2rem; text-align: center; color: #666; background: #fff; border-radius: 8px; }
+        .nav-links { margin-bottom: 1.5rem; }
+        .nav-links a { margin-right: 1rem; color: #1565c0; text-decoration: none; font-size: 0.875rem; }
+        .filter-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .search-form { display: flex; gap: 0.5rem; }
+        .search-input { padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.875rem; width: 200px; }
+        .search-btn { padding: 0.5rem 1rem; background: #1a1a1a; color: #fff; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; }
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 0.25rem; margin-top: 1.5rem; }
+        .pagination a, .pagination span { padding: 0.5rem 0.75rem; border-radius: 4px; text-decoration: none; color: #1a1a1a; font-size: 0.875rem; }
+        .pagination a:hover { background: #e5e5e5; }
+        .pagination .active { background: #1a1a1a; color: #fff; }
+        .pagination .disabled { color: #999; cursor: default; }
+        .btn-suspend { padding: 0.35rem 0.6rem; font-size: 0.75rem; background: #e65100; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-suspend:hover { background: #bf360c; }
+        .btn-activate { padding: 0.35rem 0.6rem; font-size: 0.75rem; background: #2e7d32; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-activate:hover { background: #1b5e20; }
+        .btn-withdraw { padding: 0.35rem 0.6rem; font-size: 0.75rem; background: #546e7a; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-withdraw:hover { background: #37474f; }
+        .message { padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; }
+        .message.success { background: #e8f5e9; color: #2e7d32; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="nav-links">
+        <a th:href="@{/admin/merchant-applications}">가맹점 신청 관리</a>
+        <form th:action="@{/admin/logout}" method="post" style="display:inline;">
+            <input th:if="${_csrf != null}" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <button type="submit" style="background:none;border:none;color:#1565c0;font-size:0.875rem;cursor:pointer;padding:0;">로그아웃</button>
+        </form>
+    </div>
+    <h1>가맹점 목록</h1>
+
+    <div th:if="${message}" class="message success" th:text="${message}"></div>
+
+    <div class="filter-bar">
+        <form class="search-form" th:action="@{/admin/merchants}" method="get">
+            <input type="hidden" name="page" value="0">
+            <input type="search" name="id" th:value="${id}" placeholder="Merchant ID 검색" maxlength="36" class="search-input">
+            <button type="submit" class="search-btn">검색</button>
+        </form>
+    </div>
+
+    <table th:if="${!#lists.isEmpty(merchants)}">
+        <thead>
+        <tr>
+            <th>가맹점명</th>
+            <th>API Key</th>
+            <th>상태</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="m : ${merchants}">
+            <td class="col-name" th:text="${m.name}"></td>
+            <td th:text="${m.apiKey}"></td>
+            <td><span th:class="${'status status-' + m.status.name()}" th:text="${m.status.name()}"></span></td>
+            <td class="col-actions">
+                <a th:href="@{/admin/merchants/{id}(id=${m.id})}">상세</a>
+                <th:block th:if="${m.status.name() == 'ACTIVE'}">
+                    <form th:action="@{/admin/merchants/{merchantId}/suspend(merchantId=${m.id})}" method="post" style="display:inline; margin-left:0.5rem;">
+                        <input type="hidden" name="id" th:value="${id}">
+                        <input type="hidden" name="page" th:value="${page.number}">
+                        <button type="submit" class="btn-suspend">API 정지</button>
+                    </form>
+                </th:block>
+                <th:block th:if="${m.status.name() == 'SUSPENDED'}">
+                    <form th:action="@{/admin/merchants/{merchantId}/activate(merchantId=${m.id})}" method="post" style="display:inline; margin-left:0.5rem;">
+                        <input type="hidden" name="id" th:value="${id}">
+                        <input type="hidden" name="page" th:value="${page.number}">
+                        <button type="submit" class="btn-activate">정지 해제</button>
+                    </form>
+                    <form th:action="@{/admin/merchants/{merchantId}/withdraw(merchantId=${m.id})}" method="post" style="display:inline; margin-left:0.5rem;">
+                        <input type="hidden" name="id" th:value="${id}">
+                        <input type="hidden" name="page" th:value="${page.number}">
+                        <button type="submit" class="btn-withdraw">탈퇴 처리</button>
+                    </form>
+                </th:block>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="empty" th:if="${#lists.isEmpty(merchants)}">등록된 가맹점이 없습니다.</div>
+
+    <div class="pagination" th:if="${page.totalPages > 1}">
+        <a th:if="${startPage > 0}" th:href="@{/admin/merchants(id=${id ?: ''}, page=${startPage - 1})}">‹ 이전</a>
+        <th:block th:each="p : ${#numbers.sequence(startPage, endPage)}">
+            <a th:if="${p != page.number}" th:href="@{/admin/merchants(id=${id ?: ''}, page=${p})}" th:text="${p + 1}">1</a>
+            <span th:if="${p == page.number}" class="active" th:text="${p + 1}">1</span>
+        </th:block>
+        <a th:if="${endPage < page.totalPages - 1}" th:href="@{/admin/merchants(id=${id ?: ''}, page=${endPage + 1})}">다음 ›</a>
+    </div>
+</div>
+</body>
+</html>
