@@ -22,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MerchantApplicationService {
@@ -116,5 +119,18 @@ public class MerchantApplicationService {
 
         applicationEventPublisher.publishEvent(MerchantApplicationRejectedEvent.from(
                 merchantApplication.getId(), merchantApplication.getName(), reason));
+    }
+
+    /**
+     * 구독 종료로 전이. Merchant 도메인에서 탈퇴 시 포트를 통해 호출.
+     */
+    @Transactional
+    public void markSubscriptionEnded(String applicationId) {
+        MerchantApplication application = merchantApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_APPLICATION_NOT_FOUND, applicationId));
+        MerchantApplicationStatus before = application.getStatus();
+        application.subscriptionEnded();
+        merchantApplicationRepository.save(application);
+        log.debug("[markSubscriptionEnded] applicationId={}, before={}, after=SUBSCRIPTION_ENDED", applicationId, before);
     }
 }
