@@ -14,7 +14,7 @@ import java.util.Set;
 
 /**
  * 카드 등록 토큰을 Redis에 저장.
- * TTL 10분. 카드 등록 완료 시 또는 가맹점 삭제 시 삭제.
+ * 만료 시각(expiresAt) 10분, Redis TTL 11분. 만료 후 조회 시 CARD_REGISTRATION_TOKEN_EXPIRED 구분 가능.
  */
 @Repository
 @RequiredArgsConstructor
@@ -23,18 +23,21 @@ public class RedisCardRegistrationTokenRepository implements CardRegistrationTok
     private static final String KEY_PREFIX = "card_registration_token:";
     private static final String IDX_PREFIX = "card_registration_token:idx:";
     private static final String MERCHANT_PREFIX = "card_registration_token:merchant:";
-    private static final Duration TTL = Duration.ofMinutes(10);
+    private static final Duration TOKEN_VALID_MINUTES = Duration.ofMinutes(10);
+    private static final Duration TTL = Duration.ofMinutes(11);
 
     private final StringRedisTemplate redis;
 
     @Override
     public void save(CardRegistrationToken token) {
+        LocalDateTime expiresAt = token.getCreatedAt().plus(TOKEN_VALID_MINUTES);
         String key = KEY_PREFIX + token.getToken();
         redis.opsForHash().put(key, "token", token.getToken());
         redis.opsForHash().put(key, "merchantId", token.getMerchantId());
         redis.opsForHash().put(key, "ownerId", token.getOwnerId());
         redis.opsForHash().put(key, "returnUrl", token.getReturnUrl());
         redis.opsForHash().put(key, "createdAt", token.getCreatedAt().toString());
+        redis.opsForHash().put(key, "expiresAt", expiresAt.toString());
         redis.expire(key, TTL);
 
         String idxKey = IDX_PREFIX + token.getMerchantId() + ":" + token.getOwnerId();
@@ -48,15 +51,20 @@ public class RedisCardRegistrationTokenRepository implements CardRegistrationTok
     @Override
     public Optional<CardRegistrationToken> findById(String token) {
         String key = KEY_PREFIX + token;
-        List<Object> values = redis.opsForHash().multiGet(key, List.of("token", "merchantId", "ownerId", "returnUrl", "createdAt"));
-        if (values == null || values.stream().anyMatch(v -> v == null || v.toString().isEmpty())) {
+        List<Object> values = redis.opsForHash().multiGet(key,
+                List.of("token", "merchantId", "ownerId", "returnUrl", "createdAt", "expiresAt"));
+        if (values == null || values.size() != 6 || values.stream().anyMatch(v -> v == null || v.toString().isEmpty())) {
             return Optional.empty();
         }
+        LocalDateTime createdAt = LocalDateTime.parse(values.get(4).toString());
+        LocalDateTime expiresAt = LocalDateTime.parse(values.get(5).toString());
         CardRegistrationToken t = new CardRegistrationToken(
                 values.get(0).toString(),
                 values.get(1).toString(),
                 values.get(2).toString(),
-                values.get(3).toString()
+                values.get(3).toString(),
+                createdAt,
+                expiresAt
         );
         return Optional.of(t);
     }

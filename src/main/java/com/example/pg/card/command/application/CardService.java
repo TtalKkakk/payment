@@ -68,7 +68,9 @@ public class CardService {
     public CardRegistrationResult registerCard(String token, String cardNumber, String expiry, String cvc) {
         CardRegistrationToken tokenEntity = tokenRepository.findById(token)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CARD_REGISTRATION_TOKEN_INVALID, token));
-
+        if (tokenEntity.isExpired()) {
+            throw new BusinessException(ErrorCode.CARD_REGISTRATION_TOKEN_EXPIRED);
+        }
         validateExpiry(expiry);
 
         // 아주 단순한 마스킹 처리 (예시용)

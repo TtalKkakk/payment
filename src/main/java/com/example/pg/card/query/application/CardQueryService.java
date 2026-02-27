@@ -1,5 +1,6 @@
 package com.example.pg.card.query.application;
 
+import com.example.pg.card.domain.aggregate.CardRegistrationToken;
 import com.example.pg.card.domain.repository.CardRegistrationTokenRepository;
 import com.example.pg.exception.BusinessException;
 import com.example.pg.exception.ErrorCode;
@@ -19,11 +20,14 @@ public class CardQueryService {
 
     /**
      * 카드 등록 폼 진입 전 토큰 유효성 검증.
-     * 토큰이 없거나 유효하지 않으면 예외를 던진다.
+     * 토큰이 없거나 유효하지 않으면 예외를 던진다. 만료된 토큰은 CARD_REGISTRATION_TOKEN_EXPIRED로 구분한다.
      */
     @Transactional(readOnly = true)
     public void validateToken(String token) {
-        tokenRepository.findById(token)
+        CardRegistrationToken tokenEntity = tokenRepository.findById(token)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CARD_REGISTRATION_TOKEN_INVALID, token));
+        if (tokenEntity.isExpired()) {
+            throw new BusinessException(ErrorCode.CARD_REGISTRATION_TOKEN_EXPIRED);
+        }
     }
 }

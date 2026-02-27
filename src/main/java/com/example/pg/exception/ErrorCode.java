@@ -42,6 +42,7 @@ public enum ErrorCode {
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "E002", "결제를 찾을 수 없습니다. (paymentId=%s)"),
     PAYMENT_INVALID_STATUS(HttpStatus.CONFLICT, "E020", "결제 상태 오류. (%s)"),
     CARD_REGISTRATION_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "E010", "유효하지 않은 카드 등록 토큰입니다. (token=%s)"),
+    CARD_REGISTRATION_TOKEN_EXPIRED(HttpStatus.BAD_REQUEST, "E028", "카드 등록 링크가 만료되었습니다. 가맹점에서 다시 시도해 주세요."),
     AUTH_CODE_INVALID(HttpStatus.BAD_REQUEST, "E011", "유효하지 않은 authCode입니다."),
     AUTH_CODE_EXPIRED_OR_USED(HttpStatus.BAD_REQUEST, "E012", "만료되었거나 이미 사용된 authCode입니다."),
     AUTH_CODE_UNAUTHORIZED(HttpStatus.BAD_REQUEST, "E013", "해당 authCode에 대한 권한이 없습니다."),

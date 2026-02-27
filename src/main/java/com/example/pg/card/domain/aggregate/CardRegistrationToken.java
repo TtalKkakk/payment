@@ -19,6 +19,7 @@ public class CardRegistrationToken {
     private String ownerId;
     private String returnUrl;
     private LocalDateTime createdAt;
+    private LocalDateTime expiresAt;
 
     public CardRegistrationToken(String token, String merchantId, String ownerId, String returnUrl) {
         this.token = token;
@@ -26,6 +27,22 @@ public class CardRegistrationToken {
         this.ownerId = ownerId;
         this.returnUrl = returnUrl;
         this.createdAt = LocalDateTime.now();
+        this.expiresAt = null;
+    }
+
+    /** Redis 등 저장소에서 복원할 때 사용 (createdAt, expiresAt 포함) */
+    public CardRegistrationToken(String token, String merchantId, String ownerId, String returnUrl,
+                                 LocalDateTime createdAt, LocalDateTime expiresAt) {
+        this.token = token;
+        this.merchantId = merchantId;
+        this.ownerId = ownerId;
+        this.returnUrl = returnUrl;
+        this.createdAt = createdAt;
+        this.expiresAt = expiresAt;
+    }
+
+    public boolean isExpired() {
+        return expiresAt != null && LocalDateTime.now().isAfter(expiresAt);
     }
 
     public void updateReturnUrl(String returnUrl) {
