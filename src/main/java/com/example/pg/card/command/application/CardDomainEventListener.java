@@ -4,6 +4,7 @@ import com.example.pg.card.domain.event.BillingKeyIssuedEvent;
 import com.example.pg.card.domain.event.CardRegisteredEvent;
 import com.example.pg.card.domain.repository.AuthCodeRepository;
 import com.example.pg.card.domain.repository.CardRegistrationTokenRepository;
+import com.example.pg.card.command.application.port.BillingKeyPort;
 import com.example.pg.merchant.domain.event.MerchantDeletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class CardDomainEventListener {
 
     private final CardRegistrationTokenRepository tokenRepository;
     private final AuthCodeRepository authCodeRepository;
+    private final BillingKeyPort billingKeyPort;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onCardRegistered(CardRegisteredEvent event) {
@@ -45,5 +47,6 @@ public class CardDomainEventListener {
         log.info("[DomainEvent] MerchantDeleted - Card 쪽 정리 merchantId={}, name={}", merchantId, event.name());
         tokenRepository.deleteByMerchantId(merchantId);
         authCodeRepository.deleteByMerchantId(merchantId);
+        billingKeyPort.revokeBillingKeysByMerchantId(merchantId);
     }
 }

@@ -17,7 +17,7 @@ import com.example.pg.card.domain.repository.AuthCodeRepository;
 import com.example.pg.card.domain.repository.CardCommandRepository;
 import com.example.pg.card.domain.repository.CardRegistrationTokenRepository;
 import com.example.pg.card.domain.vo.CardToken;
-import com.example.pg.card.command.application.port.BillingKeyIssuePort;
+import com.example.pg.card.command.application.port.BillingKeyPort;
 import com.example.pg.card.command.application.result.CardRegistrationResult;
 import com.example.pg.merchant.query.application.MerchantQueryService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -39,7 +39,7 @@ public class CardService {
     private final CardCommandRepository cardCommandRepository;
     private final CardRegistrationTokenRepository tokenRepository;
     private final AuthCodeRepository authCodeRepository;
-    private final BillingKeyIssuePort billingKeyIssuePort;
+    private final BillingKeyPort billingKeyPort;
     private final ApplicationEventPublisher eventPublisher;
     private final MerchantQueryService merchantQueryService;
 
@@ -116,7 +116,7 @@ public class CardService {
             throw new BusinessException(ErrorCode.AUTH_CODE_UNAUTHORIZED);
         }
 
-        String billingKey = billingKeyIssuePort.issueBillingKey(authCodeEntity.getCardToken());
+        String billingKey = billingKeyPort.issueBillingKey(authCodeEntity.getCardToken());
         authCodeEntity.markAsUsed();
         authCodeRepository.save(authCodeEntity);
 
