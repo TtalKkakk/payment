@@ -12,6 +12,7 @@ import com.example.pg.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -22,6 +23,10 @@ public class PaymentService {
     private final RefundPort refundPort;
     private final ApplicationEventPublisher eventPublisher;
 
+    /**
+     * 트랜잭션 1: 결제 객체 생성 → 상태 READY.
+     * 트랜잭션 실패 시 가맹점에게 결제 생성 실패 및 사유 전달.
+     */
     @Transactional
     public PaymentId createPayment(String merchantId, long amount,
                                   String merchantOrderId, String orderName,
@@ -57,6 +62,45 @@ public class PaymentService {
 
         // 카드사에 빌링키로 청구 요청 (비동기 시뮬레이션)
         paymentAuthorizationProcessor.processAuthorization(paymentIdValue, billingKey);
+    }
+
+    /** Tx2(승인 시작) 실패 시 보상: READY 결제를 ABORTED로 무효화. 별도 트랜잭션으로 실행 */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void compensateCreationFailure(String paymentIdValue) {
+        paymentCommandRepository.load(PaymentId.from(paymentIdValue))
+                .filter(p -> p.getStatus() == PaymentStatus.READY)
+                .ifPresent(Payment::markAsAborted);
+    }
+
+    /**
+     * 결제하기 단일 API: 트랜잭션 1(결제 생성 READY) + 트랜잭션 2(승인 요청 AUTHORIZING).
+     * Tx1 실패 시 PAYMENT_CREATION_FAILED, Tx2 실패 시 보상(ABORTED) 후 AUTHORIZATION_START_FAILED.
+     */
+    public PaymentId createPaymentAndStartAuthorization(String merchantId, long amount,
+                                                        String merchantOrderId, String orderName,
+                                                        String customerEmail, String customerName,
+                                                        String callbackUrl, String billingKey) {
+        validateAmount(amount);
+        if (billingKey == null || billingKey.isBlank()) {
+            throw new BusinessException(ErrorCode.BILLING_KEY_REQUIRED);
+        }
+
+        PaymentId paymentId;
+        try {
+            paymentId = createPayment(merchantId, amount, merchantOrderId, orderName,
+                    customerEmail, customerName, callbackUrl);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.PAYMENT_CREATION_FAILED);
+        }
+
+        try {
+            startAuthorization(paymentId.getValue(), billingKey);
+        } catch (Exception e) {
+            compensateCreationFailure(paymentId.getValue());
+            throw new BusinessException(ErrorCode.AUTHORIZATION_START_FAILED, paymentId.getValue());
+        }
+
+        return paymentId;
     }
 
     /**

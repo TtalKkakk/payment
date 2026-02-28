@@ -37,6 +37,18 @@ public class GlobalExceptionAdvice {
         log.warn("BusinessException: {} - {}", ec.getCode(), message);
 
         if (isApiRequest(request)) {
+            // 결제 실패: 가맹점 프론트에서 "승인 실패" 페이지·재시도 버튼 분기용
+            if (ec == ErrorCode.PAYMENT_CREATION_FAILED) {
+                return ResponseEntity
+                        .status(ec.getStatus())
+                        .body(ErrorResponse.ofPaymentFailure(ec.getCode(), message, true, "RETRY_PAYMENT", null));
+            }
+            if (ec == ErrorCode.AUTHORIZATION_START_FAILED) {
+                String paymentId = (e.getArgs() != null && e.getArgs().length > 0) ? String.valueOf(e.getArgs()[0]) : null;
+                return ResponseEntity
+                        .status(ec.getStatus())
+                        .body(ErrorResponse.ofPaymentFailure(ec.getCode(), message, true, "RETRY_AUTHORIZE", paymentId));
+            }
             return ResponseEntity
                     .status(ec.getStatus())
                     .body(ErrorResponse.of(ec.getCode(), message));

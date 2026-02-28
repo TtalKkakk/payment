@@ -42,34 +42,38 @@ public class PaymentController {
     }
 
     /**
-     * 결제 객체를 생성한다. (상점 서버가 호출)
-     * 영수증 발급·거래 추적을 위해 merchantOrderId, orderName, customerEmail, customerName을 함께 전달한다.
+     * 결제하기 (단일 API).
+     * - 트랜잭션 1: 결제 객체 생성 → READY. 실패 시 4xx/5xx.
+     * - 트랜잭션 2: 결제 승인 요청 → AUTHORIZING. 실패 시 4xx/5xx.
+     * - 이후 비동기로 카드사 응답 후 AUTHORIZED/FAILED 및 웹훅.
+     * 응답: HTTP CREATED + paymentId (두 트랜잭션 모두 성공 시).
      */
     @PostMapping
     public ResponseEntity<CreatePaymentResponse> createPayment(
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @RequestBody CreatePaymentRequest request
     ) {
-        PaymentId paymentId = paymentService.createPayment(
+        PaymentId paymentId = paymentService.createPaymentAndStartAuthorization(
                 merchantId,
                 request.amount(),
                 request.merchantOrderId(),
                 request.orderName(),
                 request.customerEmail(),
                 request.customerName(),
-                request.callbackUrl()
+                request.callbackUrl(),
+                request.billingKey()
         );
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new CreatePaymentResponse(paymentId.getValue()));
     }
 
     /**
-     * 빌링키로 결제 승인을 시작한다.
-     * 배달앱 서버가 보유한 빌링키를 전달하여 결제를 진행한다.
-     * 비동기적으로 AUTHORIZING → AUTHORIZED/FAILED 로 상태가 변경된다.
+     * 같은 결제로 승인만 재시도 (Tx2만 실행). READY 상태일 때만 호출 가능.
+     * E030(승인 요청 실패) 응답 후 가맹점 프론트에서 "승인만 재시도" 시 이 API 사용.
      */
     @PostMapping("/{paymentId}/authorize")
     public ResponseEntity<Void> startAuthorization(
+            @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId,
             @RequestBody AuthorizePaymentRequest request
     ) {

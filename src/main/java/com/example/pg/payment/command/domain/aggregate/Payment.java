@@ -95,4 +95,13 @@ public class Payment {
         this.status = PaymentStatus.CANCELED;
         this.updatedAt = LocalDateTime.now();
     }
+
+    /** Tx2(승인 시작) 실패 시 보상: READY → ABORTED */
+    public void markAsAborted() {
+        if (status != PaymentStatus.READY) {
+            throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "보상(ABORTED) 처리 불가: " + status);
+        }
+        this.status = PaymentStatus.ABORTED;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

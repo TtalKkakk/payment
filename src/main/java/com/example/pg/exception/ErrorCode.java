@@ -51,6 +51,11 @@ public enum ErrorCode {
     PAYMENT_AMOUNT_INVALID(HttpStatus.BAD_REQUEST, "E016", "결제 금액은 0보다 커야 합니다. (amount=%s)"),
     BILLING_KEY_REQUIRED(HttpStatus.BAD_REQUEST, "E017", "결제 승인을 위해 빌링키가 필요합니다."),
 
+    /** 결제 생성 실패 (Tx1 실패). 가맹점: "다시 결제하기" 안내 */
+    PAYMENT_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E029", "결제 접수에 실패했습니다. 다시 시도해 주세요."),
+    /** 승인 요청 실패 (Tx2 실패). 가맹점: "다시 결제하기" 또는 "같은 결제로 승인만 재시도" 안내 */
+    AUTHORIZATION_START_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E030", "결제는 접수됐으나 승인 요청 전송에 실패했습니다. 다시 시도하거나 같은 결제로 승인만 재시도해 주세요."),
+
     INTERNAL(HttpStatus.INTERNAL_SERVER_ERROR, "E999", "서버 오류가 발생했습니다.");
 
     private final HttpStatus status;

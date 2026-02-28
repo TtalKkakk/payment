@@ -4,6 +4,7 @@ package com.example.pg.payment.presentation.dto;
  * 결제 생성 요청 DTO (카드 결제 전용)
  * 영수증 발급, 거래 추적을 위해 가맹점 주문정보·고객정보를 함께 전달한다.
  * callbackUrl: 결제 결과(승인/실패) 수신 웹훅 URL
+ * billingKey: 결제 수단이 결정된 빌링키 (결제하기 시점에 전달)
  */
 public record CreatePaymentRequest(
         long amount,
@@ -11,7 +12,8 @@ public record CreatePaymentRequest(
         String orderName,
         String customerEmail,
         String customerName,
-        String callbackUrl
+        String callbackUrl,
+        String billingKey
 ) {
 }
 
