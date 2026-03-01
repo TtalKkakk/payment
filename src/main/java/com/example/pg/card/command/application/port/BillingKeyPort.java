@@ -9,10 +9,11 @@ public interface BillingKeyPort {
     /**
      * 카드사/은행에 빌링키 발급 요청.
      *
-     * @param cardToken PG 내부 카드 참조 (Card.token)
+     * @param cardToken  PG 내부 카드 참조 (Card.token)
+     * @param merchantId 가맹점 ID (카드사가 차단 시 가맹점별 조회용으로 보관)
      * @return 카드사/은행이 발급한 빌링키
      */
-    String issueBillingKey(String cardToken);
+    String issueBillingKey(String cardToken, String merchantId);
 
     /**
      * 해당 가맹점에 발급된 모든 빌링키를 카드사/은행에 차단(해지) 요청한다.

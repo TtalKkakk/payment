@@ -201,7 +201,7 @@ class CardServiceTest {
         void success() {
             AuthCode authCodeEntity = usableAuthCode();
             when(authCodeRepository.findByCode(AUTH_CODE)).thenReturn(Optional.of(authCodeEntity));
-            when(billingKeyPort.issueBillingKey(CARD_TOKEN)).thenReturn("bk_issued");
+            when(billingKeyPort.issueBillingKey(CARD_TOKEN, MERCHANT_ID)).thenReturn("bk_issued");
 
             BillingKeyExchangeResult result = cardService.exchangeBillingKey(MERCHANT_ID, AUTH_CODE);
 
@@ -221,7 +221,7 @@ class CardServiceTest {
             assertThatThrownBy(() -> cardService.exchangeBillingKey(MERCHANT_ID, "invalid"))
                     .isInstanceOf(BusinessException.class)
                     .matches(e -> ((BusinessException) e).getErrorCode() == ErrorCode.AUTH_CODE_INVALID);
-            verify(billingKeyPort, never()).issueBillingKey(any());
+            verify(billingKeyPort, never()).issueBillingKey(any(), any());
         }
 
         @Test
@@ -234,7 +234,7 @@ class CardServiceTest {
             assertThatThrownBy(() -> cardService.exchangeBillingKey(MERCHANT_ID, AUTH_CODE))
                     .isInstanceOf(BusinessException.class)
                     .matches(e -> ((BusinessException) e).getErrorCode() == ErrorCode.AUTH_CODE_EXPIRED_OR_USED);
-            verify(billingKeyPort, never()).issueBillingKey(any());
+            verify(billingKeyPort, never()).issueBillingKey(any(), any());
         }
 
         @Test
@@ -246,7 +246,7 @@ class CardServiceTest {
             assertThatThrownBy(() -> cardService.exchangeBillingKey("other-merchant", AUTH_CODE))
                     .isInstanceOf(BusinessException.class)
                     .matches(e -> ((BusinessException) e).getErrorCode() == ErrorCode.AUTH_CODE_UNAUTHORIZED);
-            verify(billingKeyPort, never()).issueBillingKey(any());
+            verify(billingKeyPort, never()).issueBillingKey(any(), any());
         }
     }
 }

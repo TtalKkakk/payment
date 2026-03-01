@@ -118,7 +118,7 @@ public class CardService {
             throw new BusinessException(ErrorCode.AUTH_CODE_UNAUTHORIZED);
         }
 
-        String billingKey = billingKeyPort.issueBillingKey(authCodeEntity.getCardToken());
+        String billingKey = billingKeyPort.issueBillingKey(authCodeEntity.getCardToken(), authCodeEntity.getMerchantId());
         authCodeEntity.markAsUsed();
         authCodeRepository.save(authCodeEntity);
 
