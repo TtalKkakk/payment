@@ -1,4 +1,4 @@
-package com.example.pg.config;
+package com.example.pg.exception.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -29,6 +29,4 @@ public record ErrorResponse(
     public static ErrorResponse ofPaymentFailure(String code, String message, boolean retryable, String action, String paymentId) {
         return new ErrorResponse(code, message, null, retryable, action, paymentId);
     }
-
-    public record FieldErrorDetail(String field, String reason) {}
 }

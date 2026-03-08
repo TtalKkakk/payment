@@ -1,6 +1,8 @@
 package com.example.pg.config;
 
 import com.example.pg.exception.BusinessException;
+import com.example.pg.exception.dto.ErrorResponse;
+import com.example.pg.exception.dto.FieldErrorDetail;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import com.example.pg.exception.ErrorCode;
@@ -109,8 +111,8 @@ public class GlobalExceptionAdvice {
     /** 400 Bad Request - @Valid 검증 실패 */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public Object handleValidation(MethodArgumentNotValidException e, HttpServletRequest request) {
-        List<ErrorResponse.FieldErrorDetail> errors = e.getBindingResult().getFieldErrors().stream()
-                .map(err -> new ErrorResponse.FieldErrorDetail(
+        List<FieldErrorDetail> errors = e.getBindingResult().getFieldErrors().stream()
+                .map(err -> new FieldErrorDetail(
                         err.getField(),
                         err.getDefaultMessage() != null ? err.getDefaultMessage() : "invalid"
                 ))
