@@ -2,8 +2,11 @@ package com.example.pg.cardcompany.application;
 
 import com.example.pg.cardcompany.domain.BillingKeyRecord;
 import com.example.pg.cardcompany.domain.BillingKeyRepository;
+import com.example.pg.cardcompany.domain.event.BillingKeyIssuedEvent;
+import com.example.pg.cardcompany.domain.event.BillingKeysRevokedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +23,7 @@ import java.util.UUID;
 public class CardCompanyBillingKeyService {
 
     private final BillingKeyRepository billingKeyRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * cardToken 기준으로 빌링키 발급. (동일 cardToken이면 기존 빌링키 반환)
@@ -31,7 +35,7 @@ public class CardCompanyBillingKeyService {
                 .orElseGet(() -> {
                     String billingKey = "bk_" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
                     billingKeyRepository.save(new BillingKeyRecord(cardToken, billingKey, merchantId));
-                    log.info("[CardCompany] BillingKey issued. cardToken={}, merchantId={}", cardToken, merchantId);
+                    eventPublisher.publishEvent(BillingKeyIssuedEvent.from(merchantId, cardToken));
                     return billingKey;
                 });
     }
@@ -42,6 +46,6 @@ public class CardCompanyBillingKeyService {
     @Transactional
     public void revokeByMerchantId(String merchantId) {
         billingKeyRepository.deleteByMerchantId(merchantId);
-        log.info("[CardCompany] BillingKeys revoked. merchantId={}", merchantId);
+        eventPublisher.publishEvent(BillingKeysRevokedEvent.from(merchantId));
     }
 }
