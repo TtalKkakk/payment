@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카드사 선택</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; align-items: center; justify-content: center; color: #1a1a1a; }
+        .box { background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); width: 100%; max-width: 400px; }
+        h1 { font-size: 1.25rem; margin-bottom: 1.5rem; text-align: center; }
+        .card-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .card-item { display: block; width: 100%; padding: 0.75rem 1rem; font-size: 0.9375rem; text-align: left; background: #fafafa; border: 1px solid #eee; border-radius: 6px; cursor: pointer; color: #1a1a1a; text-decoration: none; }
+        .card-item:hover { background: #f0f0f0; border-color: #ddd; }
+        .error { color: #c62828; font-size: 0.8125rem; margin-top: 1rem; text-align: center; }
+        input[name="returnUrl"] { display: none; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>카드사 선택</h1>
+        <p th:if="${param.error == 'no-base-url'}" class="error">선택한 카드사 연동 URL이 없습니다.</p>
+        <form th:action="@{/card/register/start}" method="post" id="form">
+            <input th:if="${_csrf != null}" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <input type="hidden" name="returnUrl" th:value="${returnUrl}" />
+            <div class="card-list">
+                <button type="submit" name="cardCompanyCode" th:value="${item.code}" class="card-item" th:each="item : ${cardCompanies}" th:text="${item.name}">카드사명</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
