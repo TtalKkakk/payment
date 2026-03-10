@@ -17,7 +17,7 @@ public class CardCompanyCommandService {
 
     public CardCompany register(String code, String name, String baseUrl) {
         if (cardCompanyRepository.findByCode(code).isPresent()) {
-            throw new BusinessException(ErrorCode.INTERNAL);
+            throw new BusinessException(ErrorCode.CARD_COMPANY_DUPLICATE_CODE, code);
         }
         CardCompany company = CardCompany.create(code, name, baseUrl);
         cardCompanyRepository.save(company);

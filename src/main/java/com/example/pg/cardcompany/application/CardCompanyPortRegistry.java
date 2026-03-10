@@ -61,6 +61,6 @@ public class CardCompanyPortRegistry {
 
     public CardCompanyBillingKeyPort getPortOrThrow(String cardCompanyCode) {
         return getPort(cardCompanyCode)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CARD_COMPANY_NOT_FOUND, cardCompanyCode));
     }
 }

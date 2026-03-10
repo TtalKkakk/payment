@@ -52,7 +52,7 @@ public class HttpCardCompanyBillingKeyAdapter implements CardCompanyBillingKeyPo
             );
             SessionResponse body = response.getBody();
             if (body == null) {
-                throw new BusinessException(ErrorCode.INTERNAL, "카드사 등록 세션 응답이 비어 있습니다.");
+                throw new BusinessException(ErrorCode.CARD_COMPANY_API_ERROR, "카드사 등록 세션 응답이 비어 있습니다.");
             }
             return new RegistrationSessionResult(body.token(), body.registrationUrl());
         } catch (HttpStatusCodeException e) {
@@ -77,7 +77,7 @@ public class HttpCardCompanyBillingKeyAdapter implements CardCompanyBillingKeyPo
             );
             BillingKeyResponse body = response.getBody();
             if (body == null) {
-                throw new BusinessException(ErrorCode.INTERNAL, "카드사 빌링키 응답이 비어 있습니다.");
+                throw new BusinessException(ErrorCode.CARD_COMPANY_API_ERROR, "카드사 빌링키 응답이 비어 있습니다.");
             }
             return new BillingKeyTokenResult(body.billingKeyToken());
         } catch (HttpStatusCodeException e) {
@@ -91,11 +91,11 @@ public class HttpCardCompanyBillingKeyAdapter implements CardCompanyBillingKeyPo
             try {
                 CardCompanyErrorResponse err = objectMapper.readValue(body, CardCompanyErrorResponse.class);
                 String msg = err.message() != null ? err.message() : body;
-                return new BusinessException(ErrorCode.INTERNAL, operation + " 실패: " + msg);
+                return new BusinessException(ErrorCode.CARD_COMPANY_API_ERROR, operation + " 실패: " + msg);
             } catch (Exception ignored) {
                 // fallback
             }
         }
-        return new BusinessException(ErrorCode.INTERNAL, operation + " 실패: " + e.getStatusCode());
+        return new BusinessException(ErrorCode.CARD_COMPANY_API_ERROR, operation + " 실패: " + e.getStatusCode());
     }
 }

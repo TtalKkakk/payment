@@ -19,7 +19,7 @@ public class CardCompanyQueryService {
 
     public CardCompany findByCode(String code) {
         return cardCompanyRepository.findByCode(code)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CARD_COMPANY_NOT_FOUND, code));
     }
 
     public Optional<CardCompany> findByCodeOptional(String code) {

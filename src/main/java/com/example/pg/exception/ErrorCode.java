@@ -44,6 +44,13 @@ public enum ErrorCode {
     PAYMENT_AMOUNT_INVALID(HttpStatus.BAD_REQUEST, "E016", "결제 금액은 0보다 커야 합니다. (amount=%s)"),
     BILLING_KEY_REQUIRED(HttpStatus.BAD_REQUEST, "E017", "결제 승인을 위해 빌링키가 필요합니다."),
 
+    // ----- CardCompany 도메인 -----
+    CARD_COMPANY_NOT_FOUND(HttpStatus.NOT_FOUND, "E031", "카드사를 찾을 수 없습니다. (id=%s)"),
+    CARD_COMPANY_DUPLICATE_CODE(HttpStatus.CONFLICT, "E032", "이미 등록된 카드사 코드입니다. (code=%s)"),
+    CARD_COMPANY_API_ERROR(HttpStatus.BAD_GATEWAY, "E033", "카드사 연동 오류. %s"),
+    CARD_REGISTER_SESSION_INVALID(HttpStatus.BAD_REQUEST, "E034", "유효하지 않거나 만료된 카드 등록 세션입니다. (token=%s)"),
+    CARD_REGISTER_AUTH_CODE_REQUIRED(HttpStatus.BAD_REQUEST, "E035", "유효한 인증 코드가 없습니다. 카드 등록을 다시 시도해 주세요."),
+
     /** 결제 생성 실패 (Tx1 실패). 가맹점: "다시 결제하기" 안내 */
     PAYMENT_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E029", "결제 접수에 실패했습니다. 다시 시도해 주세요."),
     /** 승인 요청 실패 (Tx2 실패). 가맹점: "다시 결제하기" 또는 "같은 결제로 승인만 재시도" 안내 */
