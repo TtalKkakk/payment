@@ -73,7 +73,7 @@ public class MerchantService {
 
     /**
      * 관리자용: 정지(SUSPENDED) 상태인 가맹점만 탈퇴(WITHDRAWN) 처리.
-     * 같은 트랜잭션에서 신청서를 SUBSCRIPTION_ENDED로 전이한 뒤 MerchantDeletedEvent 발행(Card 등 연쇄 처리용).
+     * 같은 트랜잭션에서 신청서를 SUBSCRIPTION_ENDED로 전이한 뒤 MerchantDeletedEvent 발행.
      */
     @Transactional
     public void withdrawMerchantFromSuspended(String merchantId) {

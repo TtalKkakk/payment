@@ -41,19 +41,8 @@ public enum ErrorCode {
     CONCURRENT_MODIFICATION(HttpStatus.CONFLICT, "E023", "다른 사용자가 먼저 처리했습니다. 새로고침 후 다시 시도해 주세요."),
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "E002", "결제를 찾을 수 없습니다. (paymentId=%s)"),
     PAYMENT_INVALID_STATUS(HttpStatus.CONFLICT, "E020", "결제 상태 오류. (%s)"),
-    CARD_REGISTRATION_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "E010", "유효하지 않은 카드 등록 토큰입니다. (token=%s)"),
-    CARD_REGISTRATION_TOKEN_EXPIRED(HttpStatus.BAD_REQUEST, "E028", "카드 등록 링크가 만료되었습니다. 가맹점에서 다시 시도해 주세요."),
-    AUTH_CODE_INVALID(HttpStatus.BAD_REQUEST, "E011", "유효하지 않은 authCode입니다."),
-    AUTH_CODE_EXPIRED_OR_USED(HttpStatus.BAD_REQUEST, "E012", "만료되었거나 이미 사용된 authCode입니다."),
-    AUTH_CODE_UNAUTHORIZED(HttpStatus.BAD_REQUEST, "E013", "해당 authCode에 대한 권한이 없습니다."),
-    EXPIRY_FORMAT_INVALID(HttpStatus.BAD_REQUEST, "E014", "유효기간 형식이 올바르지 않습니다. (MM/YY)"),
-    EXPIRY_MONTH_INVALID(HttpStatus.BAD_REQUEST, "E015", "월은 01~12 사이여야 합니다."),
     PAYMENT_AMOUNT_INVALID(HttpStatus.BAD_REQUEST, "E016", "결제 금액은 0보다 커야 합니다. (amount=%s)"),
     BILLING_KEY_REQUIRED(HttpStatus.BAD_REQUEST, "E017", "결제 승인을 위해 빌링키가 필요합니다."),
-
-    // ----- CardCompany 도메인 -----
-    CARD_COMPANY_NOT_FOUND(HttpStatus.NOT_FOUND, "E031", "카드사를 찾을 수 없습니다. (id=%s)"),
-    CARD_COMPANY_DUPLICATE_CODE(HttpStatus.CONFLICT, "E032", "이미 등록된 카드사 코드입니다. (code=%s)"),
 
     /** 결제 생성 실패 (Tx1 실패). 가맹점: "다시 결제하기" 안내 */
     PAYMENT_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E029", "결제 접수에 실패했습니다. 다시 시도해 주세요."),

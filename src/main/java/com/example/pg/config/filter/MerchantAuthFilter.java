@@ -35,7 +35,6 @@ public class MerchantAuthFilter extends OncePerRequestFilter {
     private static final List<String> FILTER_EXCLUDED_PATH_PREFIXES = List.of(
             "/api/admin/",
             "/admin/",
-            "/card/register",
             "/actuator/",
             "/error",
             "/swagger-ui",
