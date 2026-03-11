@@ -1,7 +1,6 @@
 package com.example.pg.payment.query.application;
 
-import com.example.pg.payment.command.domain.repository.PaymentCommandRepository;
-import com.example.pg.payment.command.domain.vo.PaymentId;
+import com.example.pg.payment.command.infrastructure.persistence.PaymentRepository;
 import com.example.pg.payment.presentation.dto.PaymentDetailResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class PaymentQueryService {
 
-    private final PaymentCommandRepository paymentCommandRepository;
+    private final PaymentRepository paymentRepository;
 
     /**
      * 결제 단건 조회.
@@ -28,8 +27,7 @@ public class PaymentQueryService {
      */
     @Transactional(readOnly = true)
     public Optional<PaymentDetailResponse> getPayment(String merchantId, String paymentId) {
-        return paymentCommandRepository.load(PaymentId.from(paymentId))
-                .filter(payment -> payment.getMerchantId().equals(merchantId))
+        return paymentRepository.findByMerchantIdAndId(merchantId, paymentId)
                 .map(PaymentDetailResponse::from);
     }
 }

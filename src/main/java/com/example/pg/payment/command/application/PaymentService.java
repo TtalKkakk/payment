@@ -5,10 +5,10 @@ import com.example.pg.payment.command.domain.aggregate.Payment;
 import com.example.pg.payment.command.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.command.domain.event.PaymentCreatedEvent;
 import com.example.pg.payment.command.domain.event.PaymentStatusChangedEvent;
-import com.example.pg.payment.command.domain.repository.PaymentCommandRepository;
 import com.example.pg.payment.command.domain.vo.PaymentId;
 import com.example.pg.exception.BusinessException;
 import com.example.pg.exception.ErrorCode;
+import com.example.pg.payment.command.infrastructure.persistence.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
-    private final PaymentCommandRepository paymentCommandRepository;
+    private final PaymentRepository paymentRepository;
     private final PaymentAuthorizationProcessor paymentAuthorizationProcessor;
     private final RefundPort refundPort;
     private final ApplicationEventPublisher eventPublisher;
@@ -37,7 +37,7 @@ public class PaymentService {
                 paymentId, merchantId, amount,
                 merchantOrderId, orderName, customerEmail, customerName, callbackUrl
         );
-        paymentCommandRepository.save(payment);
+        paymentRepository.save(payment);
 
         eventPublisher.publishEvent(PaymentCreatedEvent.from(
                 payment.getId(), payment.getMerchantId(), payment.getAmount()));
@@ -55,7 +55,7 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.BILLING_KEY_REQUIRED);
         }
 
-        Payment payment = paymentCommandRepository.load(PaymentId.from(paymentIdValue))
+        Payment payment = paymentRepository.load(PaymentId.from(paymentIdValue))
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentIdValue));
 
         payment.startAuthorization();
@@ -67,8 +67,7 @@ public class PaymentService {
     /** Tx2(승인 시작) 실패 시 보상: READY 결제를 ABORTED로 무효화. 별도 트랜잭션으로 실행 */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void compensateCreationFailure(String paymentIdValue) {
-        paymentCommandRepository.load(PaymentId.from(paymentIdValue))
-                .filter(p -> p.getStatus() == PaymentStatus.READY)
+        paymentRepository.findByIdAndStatus(paymentIdValue, PaymentStatus.READY)
                 .ifPresent(Payment::markAsAborted);
     }
 
@@ -110,7 +109,7 @@ public class PaymentService {
      */
     @Transactional
     public void cancelPayment(String merchantId, String paymentIdValue) {
-        Payment payment = paymentCommandRepository.load(PaymentId.from(paymentIdValue))
+        Payment payment = paymentRepository.load(PaymentId.from(paymentIdValue))
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentIdValue));
 
         if (!payment.getMerchantId().equals(merchantId)) {

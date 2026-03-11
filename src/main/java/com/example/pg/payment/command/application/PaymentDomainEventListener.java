@@ -3,7 +3,7 @@ package com.example.pg.payment.command.application;
 import com.example.pg.payment.command.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.command.domain.event.PaymentCreatedEvent;
 import com.example.pg.payment.command.domain.event.PaymentStatusChangedEvent;
-import com.example.pg.payment.command.domain.repository.PaymentCommandRepository;
+import com.example.pg.payment.command.infrastructure.persistence.PaymentRepository;
 import com.example.pg.payment.command.domain.vo.PaymentId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ import org.springframework.transaction.event.TransactionPhase;
 @RequiredArgsConstructor
 public class PaymentDomainEventListener {
 
-    private final PaymentCommandRepository paymentCommandRepository;
+    private final PaymentRepository paymentRepository;
     private final PaymentWebhookService paymentWebhookService;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -43,7 +43,7 @@ public class PaymentDomainEventListener {
             return;
         }
 
-        paymentCommandRepository.load(PaymentId.from(event.paymentId()))
+        paymentRepository.load(PaymentId.from(event.paymentId()))
                 .ifPresent(paymentWebhookService::sendWebhook);
     }
 }

@@ -2,7 +2,7 @@ package com.example.pg.payment.command.application;
 
 import com.example.pg.payment.command.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.command.domain.event.PaymentStatusChangedEvent;
-import com.example.pg.payment.command.domain.repository.PaymentCommandRepository;
+import com.example.pg.payment.command.infrastructure.persistence.PaymentRepository;
 import com.example.pg.payment.command.domain.vo.PaymentId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -16,7 +16,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 public class PaymentAuthorizationProcessor {
 
-    private final PaymentCommandRepository paymentCommandRepository;
+    private final PaymentRepository paymentRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -38,7 +38,7 @@ public class PaymentAuthorizationProcessor {
 
         PaymentId paymentId = PaymentId.from(paymentIdValue);
 
-        paymentCommandRepository.load(paymentId).ifPresent(payment -> {
+        paymentRepository.load(paymentId).ifPresent(payment -> {
             // 이미 다른 상태로 변경된 경우(취소 등)는 무시
             if (payment.getStatus() != PaymentStatus.AUTHORIZING) {
                 return;
