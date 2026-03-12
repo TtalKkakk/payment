@@ -46,6 +46,15 @@ public class Payment {
     @Column(length = 500, name = "callback_url")
     private String callbackUrl;
 
+    @Column(length = 50, name = "approval_number")
+    private String approvalNumber;
+
+    @Column(length = 100, name = "transaction_id")
+    private String transactionId;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -72,11 +81,17 @@ public class Payment {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void authorizeSuccess() {
+    /**
+     * 카드사 승인 성공 반영. approvalNumber·transactionId·approvedAt 저장 (취소·조회용).
+     */
+    public void authorizeSuccess(String approvalNumber, String transactionId, LocalDateTime approvedAt) {
         if (status != PaymentStatus.AUTHORIZING) {
             throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제 승인 성공 처리 불가: " + status);
         }
         this.status = PaymentStatus.AUTHORIZED;
+        this.approvalNumber = approvalNumber;
+        this.transactionId = transactionId;
+        this.approvedAt = approvedAt != null ? approvedAt : LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
