@@ -1,6 +1,6 @@
 package com.example.pg.payment.command.application.result;
 
-import com.example.pg.payment.command.domain.aggregate.Payment;
+import com.example.pg.payment.domain.aggregate.Payment;
 
 import java.time.LocalDateTime;
 

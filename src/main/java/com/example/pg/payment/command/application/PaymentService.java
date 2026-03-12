@@ -1,14 +1,14 @@
 package com.example.pg.payment.command.application;
 
 import com.example.pg.payment.command.application.port.RefundPort;
-import com.example.pg.payment.command.domain.aggregate.Payment;
-import com.example.pg.payment.command.domain.enumerate.PaymentStatus;
-import com.example.pg.payment.command.domain.event.PaymentCreatedEvent;
-import com.example.pg.payment.command.domain.event.PaymentStatusChangedEvent;
-import com.example.pg.payment.command.domain.vo.PaymentId;
+import com.example.pg.payment.domain.aggregate.Payment;
+import com.example.pg.payment.domain.enumerate.PaymentStatus;
+import com.example.pg.payment.domain.event.PaymentCreatedEvent;
+import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
+import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.exception.BusinessException;
 import com.example.pg.exception.ErrorCode;
-import com.example.pg.payment.command.infrastructure.persistence.PaymentRepository;
+import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;

@@ -3,7 +3,7 @@ package com.example.pg.payment.presentation;
 import com.example.pg.config.filter.MerchantAuthFilter;
 import com.example.pg.payment.command.application.PaymentService;
 import com.example.pg.payment.query.application.PaymentQueryService;
-import com.example.pg.payment.command.domain.vo.PaymentId;
+import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.payment.presentation.dto.AuthorizePaymentRequest;
 import com.example.pg.payment.presentation.dto.PaymentDetailResponse;
 import com.example.pg.payment.presentation.dto.CreatePaymentRequest;

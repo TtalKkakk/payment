@@ -48,7 +48,11 @@ dependencies {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	// 단위테스트만 실행 → JaCoCo 커버리지는 단위테스트 기준만 반영
+	// 통합테스트는 @Tag("Integration") 붙이고, ./gradlew integrationTest 로 별도 실행
+	useJUnitPlatform {
+		excludeTags 'Integration'
+	}
 	finalizedBy tasks.jacocoTestReport
 }
 

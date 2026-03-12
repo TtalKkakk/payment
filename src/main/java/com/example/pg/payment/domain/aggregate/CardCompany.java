@@ -1,0 +1,58 @@
+package com.example.pg.payment.domain.aggregate;
+
+import com.example.pg.payment.domain.enumerate.CardCompanyStatus;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+/**
+ * PG가 연동하는 카드사.
+ * 빌링키 발급 등 카드사 API 호출 시 baseUrl·전략(어댑터) 선택에 사용한다.
+ */
+@Entity
+@Table(name = "card_companies", uniqueConstraints = @UniqueConstraint(columnNames = "code"))
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class CardCompany {
+
+    @Id
+    @Column(length = 36)
+    private String id;
+
+    @Column(nullable = false, unique = true, length = 50)
+    private String code;
+
+    @Column(nullable = false, length = 100)
+    private String name;
+
+    @Column(length = 500, name = "base_url")
+    private String baseUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'ACTIVE'")
+    private CardCompanyStatus status;
+
+    @Column(nullable = false)
+    private int displayOrder = 0;
+
+    public CardCompany(String id, String code, String name, String baseUrl, CardCompanyStatus status, int displayOrder) {
+        this.id = id;
+        this.code = code;
+        this.name = name;
+        this.baseUrl = baseUrl;
+        this.status = status;
+        this.displayOrder = displayOrder;
+    }
+
+    public static CardCompany create(String code, String name, String baseUrl) {
+        String id = UUID.randomUUID().toString();
+        return new CardCompany(id, code, name, baseUrl, CardCompanyStatus.ACTIVE, 0);
+    }
+
+    public boolean isActive() {
+        return status == CardCompanyStatus.ACTIVE;
+    }
+}

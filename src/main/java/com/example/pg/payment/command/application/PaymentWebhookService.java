@@ -2,7 +2,7 @@ package com.example.pg.payment.command.application;
 
 import com.example.pg.merchant.domain.aggregate.Merchant;
 import com.example.pg.payment.command.application.result.PaymentWebhookPayload;
-import com.example.pg.payment.command.domain.aggregate.Payment;
+import com.example.pg.payment.domain.aggregate.Payment;
 import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

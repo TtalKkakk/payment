@@ -1,6 +1,6 @@
 package com.example.pg.payment.query.application;
 
-import com.example.pg.payment.command.infrastructure.persistence.PaymentRepository;
+import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
 import com.example.pg.payment.presentation.dto.PaymentDetailResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
