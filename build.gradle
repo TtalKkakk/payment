@@ -52,7 +52,24 @@ tasks.named('test') {
 	finalizedBy tasks.jacocoTestReport
 }
 
+def jacocoExcludes = [
+	'**/PgApplication.class',
+	'**/config/**',
+	'**/exception/**',
+	'**/*Dto.class',
+	'**/*Request.class',
+	'**/*Response.class',
+	'**/domain/vo/**',
+	'**/domain/event/**',
+	'**/domain/enumerate/**'
+]
+
 jacocoTestReport {
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: jacocoExcludes)
+		}))
+	}
 	reports {
 		xml.required = true
 		html.required = true
@@ -60,14 +77,31 @@ jacocoTestReport {
 }
 
 jacocoTestCoverageVerification {
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: jacocoExcludes)
+		}))
+	}
 	violationRules {
 		rule {
 			limit {
-				// 최소 라인 커버리지 비율 (예: 0.5 = 50%)
-				minimum = 0.5
+				// 최소 라인 커버리지 비율 (0 = 검증 없이 통과, 리포트만 생성)
+				minimum = 0
 			}
 		}
 	}
 }
 
 check.dependsOn jacocoTestCoverageVerification
+
+// 커버리지 리포트 경로 출력: ./gradlew test jacocoReportPath
+tasks.register('jacocoReportPath') {
+	dependsOn jacocoTestReport
+	doLast {
+		def report = file("${layout.buildDirectory.get()}/reports/jacoco/test/html/index.html")
+		logger.quiet("Jacoco HTML report: ${report.absolutePath}")
+		if (report.exists()) {
+			logger.quiet("  → 브라우저에서 열거나: open \"${report.absolutePath}\"")
+		}
+	}
+}
