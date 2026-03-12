@@ -12,8 +12,8 @@ import com.example.pg.merchantapplication.domain.event.MerchantApplicationApprov
 import com.example.pg.merchantapplication.domain.event.MerchantApplicationRejectedEvent;
 import com.example.pg.merchantapplication.domain.event.MerchantApplicationSubmittedEvent;
 import com.example.pg.merchantapplication.infrastructure.persistence.MerchantApplicationRepository;
-import com.example.pg.exception.BusinessException;
-import com.example.pg.exception.ErrorCode;
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;

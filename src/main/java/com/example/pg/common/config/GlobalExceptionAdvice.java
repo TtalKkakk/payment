@@ -1,15 +1,15 @@
-package com.example.pg.config;
+package com.example.pg.common.config;
 
-import com.example.pg.exception.BusinessException;
-import com.example.pg.exception.dto.ErrorResponse;
-import com.example.pg.exception.dto.FieldErrorDetail;
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
+import com.example.pg.common.exception.dto.ErrorResponse;
+import com.example.pg.common.exception.dto.FieldErrorDetail;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import com.example.pg.exception.ErrorCode;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;

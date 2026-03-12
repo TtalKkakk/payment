@@ -1,7 +1,7 @@
 package com.example.pg.merchantapplication.domain.aggregate;
 
-import com.example.pg.exception.BusinessException;
-import com.example.pg.exception.ErrorCode;
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
 import com.example.pg.merchantapplication.domain.vo.ApplicationName;
 import com.example.pg.merchantapplication.domain.vo.BusinessNumber;

@@ -5,8 +5,8 @@ import com.example.pg.payment.command.application.port.dto.RegistrationSessionDt
 import com.example.pg.payment.infrastructure.persistence.CardRegisterSessionStore;
 import com.example.pg.payment.query.application.BillingKeyQueryService;
 import com.example.pg.payment.query.application.dto.CardCompanyListItemDto;
-import com.example.pg.exception.BusinessException;
-import com.example.pg.exception.ErrorCode;
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

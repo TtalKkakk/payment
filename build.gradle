@@ -48,8 +48,6 @@ dependencies {
 }
 
 tasks.named('test') {
-	// 단위테스트만 실행 → JaCoCo 커버리지는 단위테스트 기준만 반영
-	// 통합테스트는 @Tag("Integration") 붙이고, ./gradlew integrationTest 로 별도 실행
 	useJUnitPlatform {
 		excludeTags 'Integration'
 	}
@@ -58,14 +56,14 @@ tasks.named('test') {
 
 def jacocoExcludes = [
 	'**/PgApplication.class',
-	'**/config/**',
-	'**/exception/**',
-	'**/*Dto.class',
-	'**/*Request.class',
-	'**/*Response.class',
+	'**/common/**',
+	'**/presentation/**',
 	'**/domain/vo/**',
 	'**/domain/event/**',
-	'**/domain/enumerate/**'
+	'**/domain/enumerate/**',
+	'**/adapter/**',
+	'**/dto/**',
+	'**/*EventListener.class'
 ]
 
 jacocoTestReport {
@@ -90,7 +88,7 @@ jacocoTestCoverageVerification {
 		rule {
 			limit {
 				// 최소 라인 커버리지 비율 (0 = 검증 없이 통과, 리포트만 생성)
-				minimum = 0
+				minimum = 0.7
 			}
 		}
 	}

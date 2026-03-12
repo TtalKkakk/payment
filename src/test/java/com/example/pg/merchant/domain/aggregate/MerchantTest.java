@@ -1,7 +1,7 @@
 package com.example.pg.merchant.domain.aggregate;
 
-import com.example.pg.exception.BusinessException;
-import com.example.pg.exception.ErrorCode;
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.merchant.domain.enumerate.MerchantStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

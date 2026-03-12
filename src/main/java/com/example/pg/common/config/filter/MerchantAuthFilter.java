@@ -1,4 +1,4 @@
-package com.example.pg.config.filter;
+package com.example.pg.common.config.filter;
 
 import com.example.pg.merchant.query.application.MerchantQueryService;
 import jakarta.servlet.FilterChain;

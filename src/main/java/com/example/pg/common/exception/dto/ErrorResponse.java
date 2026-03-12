@@ -1,4 +1,4 @@
-package com.example.pg.exception.dto;
+package com.example.pg.common.exception.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

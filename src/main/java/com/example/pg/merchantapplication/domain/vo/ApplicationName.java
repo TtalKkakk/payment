@@ -1,7 +1,7 @@
 package com.example.pg.merchantapplication.domain.vo;
 
-import com.example.pg.exception.BusinessException;
-import com.example.pg.exception.ErrorCode;
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
 
 /**
  * 가맹점 신청 시 가맹점명. 검증을 VO가 책임진다.

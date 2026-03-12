@@ -1,7 +1,7 @@
 package com.example.pg.merchant.query.application;
 
-import com.example.pg.exception.BusinessException;
-import com.example.pg.exception.ErrorCode;
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.merchant.command.application.port.MerchantPort;
 import com.example.pg.merchant.domain.aggregate.Merchant;
 import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;

@@ -1,6 +1,6 @@
-package com.example.pg.config;
+package com.example.pg.common.config;
 
-import com.example.pg.config.filter.MerchantAuthFilter;
+import com.example.pg.common.config.filter.MerchantAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

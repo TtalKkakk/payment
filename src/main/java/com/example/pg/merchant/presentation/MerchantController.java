@@ -7,7 +7,7 @@ import com.example.pg.merchant.presentation.dto.CredentialsRequest;
 import com.example.pg.merchant.presentation.dto.MerchantCredentialsResponse;
 import com.example.pg.merchant.presentation.dto.RegenerateSecretResponse;
 import com.example.pg.merchant.query.application.MerchantQueryService;
-import com.example.pg.config.filter.MerchantAuthFilter;
+import com.example.pg.common.config.filter.MerchantAuthFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

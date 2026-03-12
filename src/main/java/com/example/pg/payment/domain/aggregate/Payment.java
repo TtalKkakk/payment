@@ -2,8 +2,8 @@ package com.example.pg.payment.domain.aggregate;
 
 import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
-import com.example.pg.exception.BusinessException;
-import com.example.pg.exception.ErrorCode;
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

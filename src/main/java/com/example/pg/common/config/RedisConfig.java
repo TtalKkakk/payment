@@ -1,4 +1,4 @@
-package com.example.pg.config;
+package com.example.pg.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

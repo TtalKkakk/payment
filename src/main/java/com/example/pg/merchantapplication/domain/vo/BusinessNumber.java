@@ -1,7 +1,7 @@
 package com.example.pg.merchantapplication.domain.vo;
 
-import com.example.pg.exception.BusinessException;
-import com.example.pg.exception.ErrorCode;
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
 
 /**
  * 사업자번호. 형식 XXX-XX-XXXXX. 검증을 VO가 책임진다.
