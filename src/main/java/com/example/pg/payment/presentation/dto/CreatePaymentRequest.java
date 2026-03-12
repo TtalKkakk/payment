@@ -13,7 +13,8 @@ public record CreatePaymentRequest(
         String customerEmail,
         String customerName,
         String callbackUrl,
-        String billingKey
+        String billingKey,
+        String cardCompanyCode
 ) {
 }
 

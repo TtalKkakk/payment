@@ -100,6 +100,9 @@ public class CardCompanyRegistrationController {
             returnUrl = "/";
         }
         String separator = returnUrl.contains("?") ? "&" : "?";
-        return "redirect:" + returnUrl + separator + "billingKeyToken=" + billingKeyResult.billingKeyToken();
+        String redirect = returnUrl + separator
+                + "billingKeyToken=" + billingKeyResult.billingKeyToken()
+                + "&cardCompanyCode=" + session.cardCompanyCode();
+        return "redirect:" + redirect;
     }
 }

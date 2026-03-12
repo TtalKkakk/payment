@@ -6,6 +6,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,6 +39,9 @@ public class CardCompany {
 
     @Column(nullable = false)
     private int displayOrder = 0;
+
+    @OneToMany(mappedBy = "cardCompany", fetch = FetchType.LAZY)
+    private List<Payment> payments = new ArrayList<>();
 
     public CardCompany(String id, String code, String name, String baseUrl, CardCompanyStatus status, int displayOrder) {
         this.id = id;

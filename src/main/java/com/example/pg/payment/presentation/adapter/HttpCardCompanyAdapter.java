@@ -1,5 +1,6 @@
 package com.example.pg.payment.presentation.adapter;
 
+import com.example.pg.payment.command.application.port.dto.PaymentApproveDto;
 import com.example.pg.payment.presentation.dto.BillingKeyRequest;
 import com.example.pg.payment.presentation.dto.BillingKeyResponse;
 import com.example.pg.payment.presentation.dto.SessionRequest;
@@ -43,7 +44,7 @@ public class HttpCardCompanyAdapter implements CardCompanyPort {
     private final String baseUrl;
 
     @Override
-    public ApproveResult approve(String paymentId, long amount, String billingKeyToken) {
+    public PaymentApproveDto approve(String paymentId, long amount, String billingKeyToken) {
         String url = baseUrl.endsWith("/") ? baseUrl + APPROVE_PATH : baseUrl + "/" + APPROVE_PATH;
         CardCompanyApproveRequest request = new CardCompanyApproveRequest(paymentId, amount, billingKeyToken);
         HttpHeaders headers = new HttpHeaders();
@@ -59,12 +60,12 @@ public class HttpCardCompanyAdapter implements CardCompanyPort {
             );
             CardCompanyApproveResponse body = response.getBody();
             if (body == null) {
-                return ApproveResult.failure(paymentId, "E999", "카드사 응답이 비어 있습니다.");
+                return PaymentApproveDto.failure(paymentId, "E999", "카드사 응답이 비어 있습니다.");
             }
             return toApproveResult(body);
         } catch (Exception e) {
             log.warn("카드사 결제 승인 요청 실패 paymentId={}, url={}", paymentId, url, e);
-            return ApproveResult.failure(paymentId, "E999", e.getMessage());
+            return PaymentApproveDto.failure(paymentId, "E999", e.getMessage());
         }
     }
 
@@ -132,17 +133,17 @@ public class HttpCardCompanyAdapter implements CardCompanyPort {
         return new BusinessException(ErrorCode.CARD_COMPANY_API_ERROR, operation + " 실패: " + e.getStatusCode());
     }
 
-    private ApproveResult toApproveResult(CardCompanyApproveResponse body) {
+    private PaymentApproveDto toApproveResult(CardCompanyApproveResponse body) {
         LocalDateTime approvedAt = parseApprovedAt(body.approvedAt());
         if (body.success()) {
-            return ApproveResult.success(
+            return PaymentApproveDto.success(
                     body.paymentId(),
                     body.approvalNumber(),
                     body.transactionId(),
                     approvedAt != null ? approvedAt : LocalDateTime.now()
             );
         }
-        return ApproveResult.failure(
+        return PaymentApproveDto.failure(
                 body.paymentId(),
                 body.resultCode() != null ? body.resultCode() : "E999",
                 body.message()

@@ -1,6 +1,7 @@
 package com.example.pg.payment.command.application.port;
 
 import com.example.pg.payment.command.application.port.dto.BillingKeyTokenDto;
+import com.example.pg.payment.command.application.port.dto.PaymentApproveDto;
 import com.example.pg.payment.command.application.port.dto.RegistrationSessionDto;
 
 import java.time.LocalDateTime;
@@ -20,26 +21,7 @@ public interface CardCompanyPort {
      * @param billingKeyToken 빌링키 발급 시 카드사가 발급한 토큰
      * @return 승인 성공 시 approvalNumber·transactionId·approvedAt 포함, 실패 시 resultCode·message
      */
-    ApproveResult approve(String paymentId, long amount, String billingKeyToken);
+    PaymentApproveDto approve(String paymentId, long amount, String billingKeyToken);
     RegistrationSessionDto createRegistrationSession(String returnUrl);
     BillingKeyTokenDto issueBillingKey(String authCode);
-
-    record ApproveResult(
-            boolean success,
-            String paymentId,
-            String approvalNumber,
-            String transactionId,
-            LocalDateTime approvedAt,
-            String resultCode,
-            String message
-    ) {
-        public static ApproveResult success(String paymentId, String approvalNumber, String transactionId,
-                                            LocalDateTime approvedAt) {
-            return new ApproveResult(true, paymentId, approvalNumber, transactionId, approvedAt, "0000", null);
-        }
-
-        public static ApproveResult failure(String paymentId, String resultCode, String message) {
-            return new ApproveResult(false, paymentId, null, null, null, resultCode, message);
-        }
-    }
 }

@@ -58,9 +58,19 @@ public class Payment {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "card_company_id", nullable = true)
+    private CardCompany cardCompany;
+
     public Payment(PaymentId paymentId, String merchantId, long amount,
                    String merchantOrderId, String orderName, String customerEmail, String customerName,
                    String callbackUrl) {
+        this(paymentId, merchantId, amount, merchantOrderId, orderName, customerEmail, customerName, callbackUrl, null);
+    }
+
+    public Payment(PaymentId paymentId, String merchantId, long amount,
+                   String merchantOrderId, String orderName, String customerEmail, String customerName,
+                   String callbackUrl, CardCompany cardCompany) {
         this.id = paymentId.getValue();
         this.merchantId = merchantId;
         this.amount = amount;
@@ -69,6 +79,7 @@ public class Payment {
         this.customerEmail = customerEmail;
         this.customerName = customerName;
         this.callbackUrl = callbackUrl;
+        this.cardCompany = cardCompany;
         this.status = PaymentStatus.READY;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();

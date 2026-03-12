@@ -8,6 +8,7 @@ import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.exception.BusinessException;
 import com.example.pg.exception.ErrorCode;
+import com.example.pg.payment.infrastructure.persistence.CardCompanyRepository;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PaymentService {
     private final PaymentRepository paymentRepository;
+    private final CardCompanyRepository cardCompanyRepository;
     private final PaymentAuthorizationProcessor paymentAuthorizationProcessor;
     private final RefundPort refundPort;
     private final ApplicationEventPublisher eventPublisher;
@@ -27,15 +29,21 @@ public class PaymentService {
      * 트랜잭션 1: 결제 객체 생성 → 상태 READY.
      * 트랜잭션 실패 시 가맹점에게 결제 생성 실패 및 사유 전달.
      */
+
     @Transactional
     public PaymentId createPayment(String merchantId, long amount,
                                   String merchantOrderId, String orderName,
-                                  String customerEmail, String customerName, String callbackUrl) {
+                                  String customerEmail, String customerName, String callbackUrl,
+                                  String cardCompanyCode) {
         validateAmount(amount);
         PaymentId paymentId = PaymentId.generate();
+        var cardCompany = (cardCompanyCode != null && !cardCompanyCode.isBlank())
+                ? cardCompanyRepository.findByCode(cardCompanyCode).orElse(null)
+                : null;
         Payment payment = new Payment(
                 paymentId, merchantId, amount,
-                merchantOrderId, orderName, customerEmail, customerName, callbackUrl
+                merchantOrderId, orderName, customerEmail, customerName, callbackUrl,
+                cardCompany
         );
         paymentRepository.save(payment);
 
@@ -78,7 +86,8 @@ public class PaymentService {
     public PaymentId createPaymentAndStartAuthorization(String merchantId, long amount,
                                                         String merchantOrderId, String orderName,
                                                         String customerEmail, String customerName,
-                                                        String callbackUrl, String billingKey) {
+                                                        String callbackUrl, String billingKey,
+                                                        String cardCompanyCode) {
         validateAmount(amount);
         if (billingKey == null || billingKey.isBlank()) {
             throw new BusinessException(ErrorCode.BILLING_KEY_REQUIRED);
@@ -87,7 +96,7 @@ public class PaymentService {
         PaymentId paymentId;
         try {
             paymentId = createPayment(merchantId, amount, merchantOrderId, orderName,
-                    customerEmail, customerName, callbackUrl);
+                    customerEmail, customerName, callbackUrl, cardCompanyCode);
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.PAYMENT_CREATION_FAILED);
         }

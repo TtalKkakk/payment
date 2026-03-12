@@ -61,7 +61,8 @@ public class PaymentController {
                 request.customerEmail(),
                 request.customerName(),
                 request.callbackUrl(),
-                request.billingKey()
+                request.billingKey(),
+                request.cardCompanyCode()
         );
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new CreatePaymentResponse(paymentId.getValue()));
