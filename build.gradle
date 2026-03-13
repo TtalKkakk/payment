@@ -3,6 +3,7 @@ plugins {
 	id 'org.springframework.boot' version '4.0.2'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'jacoco'
+	id 'org.sonarqube' version '7.2.3.7755'
 }
 
 group = 'com.example'
@@ -95,6 +96,22 @@ jacocoTestCoverageVerification {
 }
 
 check.dependsOn jacocoTestCoverageVerification
+
+// ---------------------------------------------------------------------------
+// SonarQube (./gradlew test sonar -Dsonar.host.url=... -Dsonar.token=...)
+// ---------------------------------------------------------------------------
+sonar {
+	properties {
+		property 'sonar.projectKey', 'pg'
+		property 'sonar.projectName', 'pg'
+		property 'sonar.skipCompile', 'true'
+		// JaCoCo XML 리포트 (test 후 sonar 실행 시 커버리지 반영)
+		property 'sonar.coverage.jacoco.xmlReportPaths', 'build/reports/jacoco/test/jacocoTestReport.xml'
+	}
+}
+tasks.named('sonar').configure {
+	dependsOn tasks.test
+}
 
 // 커버리지 리포트 경로 출력: ./gradlew test jacocoReportPath
 tasks.register('jacocoReportPath') {
