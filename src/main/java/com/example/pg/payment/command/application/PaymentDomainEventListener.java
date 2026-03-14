@@ -1,6 +1,7 @@
 package com.example.pg.payment.command.application;
 
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
+import com.example.pg.payment.domain.event.AuthorizationStartedEvent;
 import com.example.pg.payment.domain.event.PaymentCreatedEvent;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
@@ -23,6 +24,12 @@ public class PaymentDomainEventListener {
 
     private final PaymentRepository paymentRepository;
     private final PaymentWebhookService paymentWebhookService;
+    private final PaymentAuthorizationProcessor paymentAuthorizationProcessor;
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onAuthorizationStarted(AuthorizationStartedEvent event) {
+        paymentAuthorizationProcessor.processAuthorization(event.paymentId(), event.billingKey());
+    }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onPaymentCreated(PaymentCreatedEvent event) {

@@ -1,6 +1,8 @@
 package com.example.pg.payment.presentation;
 
 import com.example.pg.common.config.filter.MerchantAuthFilter;
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.payment.command.application.PaymentService;
 import com.example.pg.payment.query.application.PaymentQueryService;
 import com.example.pg.payment.domain.vo.PaymentId;
@@ -109,6 +111,9 @@ public class PaymentController {
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId
     ) {
+        if (paymentId == null || paymentId.isBlank() || ";".equals(paymentId)) {
+            throw new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentId);
+        }
         byte[] pdf = receiptPdfService.generateByPaymentId(paymentId, merchantId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);

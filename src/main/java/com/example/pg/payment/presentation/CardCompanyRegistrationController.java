@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  * 카드사 선택 → 등록 세션 생성 → 카드사 페이지 이동 → 콜백 → 빌링키 발급 후 가맹점 returnUrl로 리다이렉트.
  */
 @Controller
-@RequestMapping("/card")
+@RequestMapping("/billing-key")
 @RequiredArgsConstructor
 public class CardCompanyRegistrationController {
 
@@ -61,7 +61,7 @@ public class CardCompanyRegistrationController {
             @RequestParam(value = "returnUrl", required = false) String returnUrl
     ) {
         String pgCallbackUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/card/callback/register")
+                .path("/billing-key/callback/register")
                 .build()
                 .toUriString();
 
@@ -72,7 +72,7 @@ public class CardCompanyRegistrationController {
 
         String cardCompanyBaseUrl = billingKeyQueryService.findByCode(cardCompanyCode).getBaseUrl();
         if (cardCompanyBaseUrl == null || cardCompanyBaseUrl.isBlank()) {
-            return "redirect:/card/register?error=no-base-url";
+            return "redirect:/billing-key/register?error=no-base-url";
         }
         String redirectUrl = cardCompanyBaseUrl.replaceFirst("/$", "") + result.registrationUrl();
         return "redirect:" + redirectUrl;
@@ -98,6 +98,10 @@ public class CardCompanyRegistrationController {
         String returnUrl = session.returnUrl();
         if (returnUrl == null || returnUrl.isBlank()) {
             returnUrl = "/";
+        }
+        // ? 붙일 때 baseUrl/ 가 아닌 baseUrl? 가 되도록 끝의 / 제거
+        if (!returnUrl.contains("?") && returnUrl.endsWith("/")) {
+            returnUrl = returnUrl.substring(0, returnUrl.length() - 1);
         }
         String separator = returnUrl.contains("?") ? "&" : "?";
         String redirect = returnUrl + separator

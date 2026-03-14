@@ -13,6 +13,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -58,10 +59,31 @@ public class GlobalExceptionAdvice {
         return toErrorView(ec.getStatus().value(), ec.getCode(), message);
     }
 
+    /** 400 Bad Request - 쿼리/경로 파라미터 타입 변환 실패 (어떤 파라미터가 어떤 값으로 실패했는지 로그) */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public Object handleTypeMismatch(MethodArgumentTypeMismatchException e, HttpServletRequest request) {
+        String param = e.getName();
+        Object value = e.getValue();
+        String requiredType = e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "?";
+        log.warn("Bad request (parameter conversion): requestURI={}, param={}, value={}, requiredType={}",
+                request.getRequestURI(), param, value, requiredType);
+        String message = String.format("파라미터 '%s' 값이 올바르지 않습니다. (값: %s)", param, value);
+        if (isApiRequest(request)) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(ErrorResponse.of("BAD_REQUEST", message));
+        }
+        return toErrorView(400, "BAD_REQUEST", message);
+    }
+
     /** 400 Bad Request - 잘못된 인자 */
     @ExceptionHandler(IllegalArgumentException.class)
     public Object handleIllegalArgument(IllegalArgumentException e, HttpServletRequest request) {
-        log.warn("Bad request: {}", e.getMessage());
+        if (e.getMessage() != null && e.getMessage().contains("Conversion")) {
+            log.warn("Bad request (conversion): {} - requestURI={}", e.getMessage(), request.getRequestURI(), e);
+        } else {
+            log.warn("Bad request: {}", e.getMessage());
+        }
         if (isApiRequest(request)) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)

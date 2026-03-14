@@ -38,11 +38,12 @@ class MerchantApplicationTest {
     class Create {
 
         @Test
-        @DisplayName("VO로 생성 시 PENDING, version 0, id 부여")
+        @DisplayName("VO로 생성 시 PENDING, id·version은 null (persist 시 @PrePersist에서 부여)")
         void success() {
             MerchantApplication app = createPending();
 
-            assertThat(app.getId()).isNotBlank();
+            assertThat(app.getId()).isNull();
+            assertThat(app.getVersion()).isNull();
             assertThat(app.getName()).isEqualTo(NAME);
             assertThat(app.getBusinessNumber()).isEqualTo(BUSINESS_NUMBER);
             assertThat(app.getContactPhone()).isEqualTo(PHONE);
@@ -51,7 +52,6 @@ class MerchantApplicationTest {
             assertThat(app.getStatus()).isEqualTo(MerchantApplicationStatus.PENDING);
             assertThat(app.getRejectReason()).isNull();
             assertThat(app.getProcessedAt()).isNull();
-            assertThat(app.getVersion()).isEqualTo(0L);
             assertThat(app.getCreatedAt()).isNotNull();
             assertThat(app.getUpdatedAt()).isNotNull();
         }

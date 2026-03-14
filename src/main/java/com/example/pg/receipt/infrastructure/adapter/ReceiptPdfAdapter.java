@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
@@ -21,12 +22,17 @@ public class ReceiptPdfAdapter implements ReceiptPdfPort {
 
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.KOREA);
 
+    /** 한글 폰트 (classpath: src/main/resources/fonts/NotoSansKR-Regular.ttf 필요, README 참고) */
+    private static final String KOREAN_FONT_FAMILY = "Noto Sans KR";
+    private static final String KOREAN_FONT_PATH = "/fonts/NotoSansKR-Regular.ttf";
+
     @Override
     public byte[] generate(Receipt receipt) {
         String html = buildReceiptHtml(receipt);
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
             builder.useFastMode();
+            registerKoreanFont(builder);
             builder.withHtmlContent(html, null);
             builder.toStream(out);
             builder.run();
@@ -34,6 +40,22 @@ public class ReceiptPdfAdapter implements ReceiptPdfPort {
         } catch (IOException e) {
             log.error("[ReceiptPdf] PDF 생성 실패 receiptId={}", receipt.getId(), e);
             throw new RuntimeException("영수증 PDF 생성에 실패했습니다.", e);
+        }
+    }
+
+    /**
+     * 한글 표시를 위해 Noto Sans KR 폰트 등록.
+     * resources/fonts/NotoSansKR-Regular.ttf 가 없으면 등록을 건너뛰고, 한글이 깨질 수 있음.
+     */
+    private void registerKoreanFont(PdfRendererBuilder builder) {
+        try (InputStream fontStream = getClass().getResourceAsStream(KOREAN_FONT_PATH)) {
+            if (fontStream != null) {
+                builder.useFont(() -> getClass().getResourceAsStream(KOREAN_FONT_PATH), KOREAN_FONT_FAMILY);
+            } else {
+                log.debug("[ReceiptPdf] 한글 폰트 없음 ({}), resources/fonts/README.md 참고", KOREAN_FONT_PATH);
+            }
+        } catch (IOException e) {
+            log.warn("[ReceiptPdf] 한글 폰트 로드 실패: {}", e.getMessage());
         }
     }
 
@@ -51,10 +73,10 @@ public class ReceiptPdfAdapter implements ReceiptPdfPort {
             <head>
                 <meta charset="UTF-8"/>
                 <style>
-                    body { font-family: Malgun Gothic, sans-serif; font-size: 11pt; padding: 20px; }
+                    body { font-family: "Noto Sans KR", "Malgun Gothic", sans-serif; font-size: 11pt; padding: 20px; }
                     h1 { font-size: 16pt; text-align: center; margin-bottom: 20px; }
                     .voided { color: #c00; font-weight: bold; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+                    table { width: 100%%; border-collapse: collapse; margin-top: 16px; }
                     th, td { border: 1px solid #333; padding: 8px; text-align: left; }
                     th { width: 120px; background: #f5f5f5; }
                     .footer { margin-top: 24px; text-align: center; font-size: 9pt; color: #666; }
@@ -94,6 +116,10 @@ public class ReceiptPdfAdapter implements ReceiptPdfPort {
             );
     }
 
+    /**
+     * XML/HTML 특수문자 이스케이프.
+     * formatted()에 넘기므로 '%'는 "%%"로 escape (%; 등이 포맷 지시자로 해석되는 것 방지).
+     */
     private static String escapeXml(String value) {
         if (value == null) return "";
         return value
@@ -101,6 +127,7 @@ public class ReceiptPdfAdapter implements ReceiptPdfPort {
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")
                 .replace("\"", "&quot;")
-                .replace("'", "&apos;");
+                .replace("'", "&apos;")
+                .replace("%", "%%");
     }
 }

@@ -82,8 +82,8 @@ class MerchantApplicationQueryServiceTest {
         @Test
         @DisplayName("존재하면 MerchantApplication 반환")
         void success() {
-            MerchantApplication app = createPending();
-            String id = app.getId();
+            String id = "app-findbyid-1";
+            MerchantApplication app = new MerchantApplication(id, NAME, BUSINESS_NUMBER, PHONE, EMAIL, PASSWORD_HASH);
             when(merchantApplicationRepository.findById(id)).thenReturn(Optional.of(app));
 
             MerchantApplication result = merchantApplicationQueryService.findById(id);

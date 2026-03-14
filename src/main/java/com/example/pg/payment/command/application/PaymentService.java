@@ -3,6 +3,7 @@ package com.example.pg.payment.command.application;
 import com.example.pg.payment.command.application.port.RefundPort;
 import com.example.pg.payment.domain.aggregate.Payment;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
+import com.example.pg.payment.domain.event.AuthorizationStartedEvent;
 import com.example.pg.payment.domain.event.PaymentCreatedEvent;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
@@ -21,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final CardCompanyRepository cardCompanyRepository;
-    private final PaymentAuthorizationProcessor paymentAuthorizationProcessor;
     private final RefundPort refundPort;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -68,8 +68,8 @@ public class PaymentService {
 
         payment.startAuthorization();
 
-        // 카드사에 빌링키로 청구 요청 (비동기 시뮬레이션)
-        paymentAuthorizationProcessor.processAuthorization(paymentIdValue, billingKey);
+        // 트랜잭션 커밋 후 비동기 승인 처리 (커밋 전 호출 시 DB에 AUTHORIZING이 반영되기 전에 조회되어 상태가 바뀌지 않는 문제 방지)
+        eventPublisher.publishEvent(AuthorizationStartedEvent.from(paymentIdValue, billingKey));
     }
 
     /** Tx2(승인 시작) 실패 시 보상: READY 결제를 ABORTED로 무효화. 별도 트랜잭션으로 실행 */

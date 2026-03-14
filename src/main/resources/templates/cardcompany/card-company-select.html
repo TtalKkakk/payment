@@ -20,7 +20,7 @@
     <div class="box">
         <h1>카드사 선택</h1>
         <p th:if="${param.error == 'no-base-url'}" class="error">선택한 카드사 연동 URL이 없습니다.</p>
-        <form th:action="@{/card/register/start}" method="post" id="form">
+        <form th:action="@{/billing-key/register/start}" method="post" id="form">
             <input th:if="${_csrf != null}" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <input type="hidden" name="returnUrl" th:value="${returnUrl}" />
             <div class="card-list">

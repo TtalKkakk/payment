@@ -79,18 +79,32 @@ public class MerchantApplication {
         this.createdAt = LocalDateTime.now();
         this.processedAt = null;
         this.updatedAt = LocalDateTime.now();
-        this.version = 0L;
+        this.version = (id == null) ? null : 0L;
+    }
+
+    /**
+     * persist 직전에 id·version이 없으면 채운다.
+     * 신규 엔티티는 id=null로 두어 Spring Data JPA가 persist()를 호출하도록 하고, INSERT 직전에 여기서 id를 부여한다.
+     */
+    @PrePersist
+    void generateIdIfNew() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID().toString();
+        }
+        if (this.version == null) {
+            this.version = 0L;
+        }
     }
 
     /**
      * 신청 애그리거트를 생성한다.
+     * id는 넣지 않아 Spring Data JPA save() 시 persist()가 호출되도록 한다. 실제 id는 @PrePersist에서 부여.
      * 검증은 Value Object(ApplicationName, BusinessNumber 등)에서 수행되므로, 여기서는 VO 값을 넣기만 한다.
      */
     public static MerchantApplication create(ApplicationName name, BusinessNumber businessNumber,
                                             ContactPhone contactPhone, ContactEmail contactEmail, PasswordHash passwordHash) {
-        String id = UUID.randomUUID().toString();
         return new MerchantApplication(
-                id,
+                null,
                 name.value(),
                 businessNumber.value(),
                 contactPhone.value(),

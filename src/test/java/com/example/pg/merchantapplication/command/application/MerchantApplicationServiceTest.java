@@ -44,6 +44,12 @@ class MerchantApplicationServiceTest {
     private static final String EMAIL = "test@example.com";
     private static final String RAW_PASSWORD = "password123";
     private static final String PASSWORD_HASH = "$2a$10$encodedHash";
+    private static final String APPLICATION_ID = "app-id-1";
+
+    /** getId()가 필요한 테스트용 (approve/reject/markSubscriptionEnded 등) */
+    private static MerchantApplication createWithId(String id) {
+        return new MerchantApplication(id, NAME, BUSINESS_NUMBER, PHONE, EMAIL, PASSWORD_HASH);
+    }
 
     @Mock
     private MerchantApplicationRepository merchantApplicationRepository;
@@ -75,7 +81,7 @@ class MerchantApplicationServiceTest {
             verify(merchantApplicationRepository).save(captor.capture());
             MerchantApplication saved = captor.getValue();
 
-            assertThat(saved.getId()).isNotBlank();
+            assertThat(saved.getId()).isNull(); // 실제 persist 시 @PrePersist에서 id 부여
             assertThat(saved.getName()).isEqualTo(NAME);
             assertThat(saved.getBusinessNumber()).isEqualTo(BUSINESS_NUMBER);
             assertThat(saved.getStatus()).isEqualTo(MerchantApplicationStatus.PENDING);
@@ -179,21 +185,14 @@ class MerchantApplicationServiceTest {
         @Test
         @DisplayName("PENDING 신청 승인 시 save, Merchant 생성 포트 호출, 이벤트 발행")
         void success() {
-            MerchantApplication app = MerchantApplication.create(
-                    ApplicationName.of(NAME),
-                    BusinessNumber.of(BUSINESS_NUMBER),
-                    ContactPhone.of(PHONE),
-                    ContactEmail.of(EMAIL),
-                    PasswordHash.of(PASSWORD_HASH)
-            );
-            String applicationId = app.getId();
-            when(merchantApplicationRepository.findById(applicationId)).thenReturn(Optional.of(app));
+            MerchantApplication app = createWithId(APPLICATION_ID);
+            when(merchantApplicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(app));
 
-            merchantApplicationService.approve(applicationId);
+            merchantApplicationService.approve(APPLICATION_ID);
 
             verify(merchantApplicationRepository).save(app);
             assertThat(app.getStatus()).isEqualTo(MerchantApplicationStatus.APPROVED);
-            verify(merchantApplicationPort).createFromApprovedApplication(applicationId, NAME);
+            verify(merchantApplicationPort).createFromApprovedApplication(APPLICATION_ID, NAME);
             verify(applicationEventPublisher).publishEvent(any(MerchantApplicationApprovedEvent.class));
         }
 
@@ -212,17 +211,11 @@ class MerchantApplicationServiceTest {
         @Test
         @DisplayName("이미 처리된 신청이면 APPLICATION_ALREADY_PROCESSED")
         void alreadyProcessed() {
-            MerchantApplication app = MerchantApplication.create(
-                    ApplicationName.of(NAME),
-                    BusinessNumber.of(BUSINESS_NUMBER),
-                    ContactPhone.of(PHONE),
-                    ContactEmail.of(EMAIL),
-                    PasswordHash.of(PASSWORD_HASH)
-            );
+            MerchantApplication app = createWithId(APPLICATION_ID);
             app.approve();
-            when(merchantApplicationRepository.findById(app.getId())).thenReturn(Optional.of(app));
+            when(merchantApplicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(app));
 
-            assertThatThrownBy(() -> merchantApplicationService.approve(app.getId()))
+            assertThatThrownBy(() -> merchantApplicationService.approve(APPLICATION_ID))
                     .isInstanceOf(BusinessException.class)
                     .matches(e -> ((BusinessException) e).getErrorCode() == ErrorCode.APPLICATION_ALREADY_PROCESSED);
             verify(merchantApplicationPort, never()).createFromApprovedApplication(any(), any());
@@ -236,17 +229,11 @@ class MerchantApplicationServiceTest {
         @Test
         @DisplayName("PENDING 신청 거절 시 save, 이벤트 발행")
         void success() {
-            MerchantApplication app = MerchantApplication.create(
-                    ApplicationName.of(NAME),
-                    BusinessNumber.of(BUSINESS_NUMBER),
-                    ContactPhone.of(PHONE),
-                    ContactEmail.of(EMAIL),
-                    PasswordHash.of(PASSWORD_HASH)
-            );
-            when(merchantApplicationRepository.findById(app.getId())).thenReturn(Optional.of(app));
+            MerchantApplication app = createWithId(APPLICATION_ID);
+            when(merchantApplicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(app));
             String reason = "서류 미비";
 
-            merchantApplicationService.reject(app.getId(), reason);
+            merchantApplicationService.reject(APPLICATION_ID, reason);
 
             verify(merchantApplicationRepository).save(app);
             assertThat(app.getStatus()).isEqualTo(MerchantApplicationStatus.REJECTED);
@@ -268,17 +255,11 @@ class MerchantApplicationServiceTest {
         @Test
         @DisplayName("이미 처리된 신청이면 APPLICATION_ALREADY_PROCESSED")
         void alreadyProcessed() {
-            MerchantApplication app = MerchantApplication.create(
-                    ApplicationName.of(NAME),
-                    BusinessNumber.of(BUSINESS_NUMBER),
-                    ContactPhone.of(PHONE),
-                    ContactEmail.of(EMAIL),
-                    PasswordHash.of(PASSWORD_HASH)
-            );
+            MerchantApplication app = createWithId(APPLICATION_ID);
             app.approve();
-            when(merchantApplicationRepository.findById(app.getId())).thenReturn(Optional.of(app));
+            when(merchantApplicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(app));
 
-            assertThatThrownBy(() -> merchantApplicationService.reject(app.getId(), "사유"))
+            assertThatThrownBy(() -> merchantApplicationService.reject(APPLICATION_ID, "사유"))
                     .isInstanceOf(BusinessException.class)
                     .matches(e -> ((BusinessException) e).getErrorCode() == ErrorCode.APPLICATION_ALREADY_PROCESSED);
         }
@@ -365,18 +346,11 @@ class MerchantApplicationServiceTest {
         @Test
         @DisplayName("APPROVED 신청이면 subscriptionEnded 후 save")
         void success() {
-            MerchantApplication app = MerchantApplication.create(
-                    ApplicationName.of(NAME),
-                    BusinessNumber.of(BUSINESS_NUMBER),
-                    ContactPhone.of(PHONE),
-                    ContactEmail.of(EMAIL),
-                    PasswordHash.of(PASSWORD_HASH)
-            );
+            MerchantApplication app = createWithId(APPLICATION_ID);
             app.approve();
-            String applicationId = app.getId();
-            when(merchantApplicationRepository.findById(applicationId)).thenReturn(Optional.of(app));
+            when(merchantApplicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(app));
 
-            merchantApplicationService.markSubscriptionEnded(applicationId);
+            merchantApplicationService.markSubscriptionEnded(APPLICATION_ID);
 
             verify(merchantApplicationRepository).save(app);
             assertThat(app.getStatus()).isEqualTo(MerchantApplicationStatus.SUBSCRIPTION_ENDED);
@@ -396,16 +370,10 @@ class MerchantApplicationServiceTest {
         @Test
         @DisplayName("APPROVED가 아니면 APPLICATION_ALREADY_PROCESSED")
         void notApproved() {
-            MerchantApplication app = MerchantApplication.create(
-                    ApplicationName.of(NAME),
-                    BusinessNumber.of(BUSINESS_NUMBER),
-                    ContactPhone.of(PHONE),
-                    ContactEmail.of(EMAIL),
-                    PasswordHash.of(PASSWORD_HASH)
-            );
-            when(merchantApplicationRepository.findById(app.getId())).thenReturn(Optional.of(app));
+            MerchantApplication app = createWithId(APPLICATION_ID);
+            when(merchantApplicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(app));
 
-            assertThatThrownBy(() -> merchantApplicationService.markSubscriptionEnded(app.getId()))
+            assertThatThrownBy(() -> merchantApplicationService.markSubscriptionEnded(APPLICATION_ID))
                     .isInstanceOf(BusinessException.class)
                     .matches(e -> ((BusinessException) e).getErrorCode() == ErrorCode.APPLICATION_ALREADY_PROCESSED);
             verify(merchantApplicationRepository, never()).save(any());

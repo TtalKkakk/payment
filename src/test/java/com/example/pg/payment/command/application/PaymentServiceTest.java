@@ -3,6 +3,7 @@ package com.example.pg.payment.command.application;
 import com.example.pg.payment.domain.aggregate.CardCompany;
 import com.example.pg.payment.domain.aggregate.Payment;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
+import com.example.pg.payment.domain.event.AuthorizationStartedEvent;
 import com.example.pg.payment.domain.event.PaymentCreatedEvent;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
@@ -43,8 +44,6 @@ class PaymentServiceTest {
     private PaymentRepository paymentRepository;
     @Mock
     private CardCompanyRepository cardCompanyRepository;
-    @Mock
-    private PaymentAuthorizationProcessor paymentAuthorizationProcessor;
     @Mock
     private RefundPort refundPort;
     @Mock
@@ -130,7 +129,7 @@ class PaymentServiceTest {
         }
 
         @Test
-        @DisplayName("성공 시 startAuthorization 호출 후 processAuthorization 위임")
+        @DisplayName("성공 시 상태 AUTHORIZING으로 변경 후 AuthorizationStartedEvent 발행")
         void success() {
             Payment payment = new Payment(
                     PaymentId.from(PAYMENT_ID), MERCHANT_ID, AMOUNT,
@@ -141,7 +140,10 @@ class PaymentServiceTest {
             paymentService.startAuthorization(PAYMENT_ID, BILLING_KEY);
 
             assertThat(payment.getStatus()).isEqualTo(PaymentStatus.AUTHORIZING);
-            verify(paymentAuthorizationProcessor).processAuthorization(PAYMENT_ID, BILLING_KEY);
+            ArgumentCaptor<AuthorizationStartedEvent> eventCaptor = ArgumentCaptor.forClass(AuthorizationStartedEvent.class);
+            verify(eventPublisher).publishEvent(eventCaptor.capture());
+            assertThat(eventCaptor.getValue().paymentId()).isEqualTo(PAYMENT_ID);
+            assertThat(eventCaptor.getValue().billingKey()).isEqualTo(BILLING_KEY);
         }
     }
 
@@ -198,11 +200,7 @@ class PaymentServiceTest {
                 saved.add(p);
                 return p;
             });
-            when(paymentRepository.load(any(PaymentId.class))).thenAnswer(inv -> {
-                PaymentId id = inv.getArgument(0);
-                return saved.stream().filter(p -> p.getId().equals(id.getValue())).findFirst();
-            });
-            // 보상 시 READY 상태인 결제를 조회한다고 가정 (동일 id의 새 인스턴스, DB에서는 아직 READY로 보임)
+            when(paymentRepository.load(any(PaymentId.class))).thenThrow(new RuntimeException("network error"));
             when(paymentRepository.findByIdAndStatus(anyString(), eq(PaymentStatus.READY))).thenAnswer(inv -> {
                 String id = inv.getArgument(0);
                 if (saved.isEmpty()) return Optional.empty();
@@ -215,8 +213,6 @@ class PaymentServiceTest {
                 );
                 return Optional.of(readyPayment);
             });
-            doThrow(new RuntimeException("network error")).when(paymentAuthorizationProcessor)
-                    .processAuthorization(any(), any());
 
             assertThatThrownBy(() -> paymentService.createPaymentAndStartAuthorization(
                     MERCHANT_ID, AMOUNT, "ord-1", "주문", "a@a.com", "홍길동", "https://cb", BILLING_KEY, null))
