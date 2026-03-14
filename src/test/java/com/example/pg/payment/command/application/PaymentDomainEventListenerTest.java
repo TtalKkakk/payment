@@ -10,7 +10,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -58,23 +57,14 @@ class PaymentDomainEventListenerTest {
     class OnPaymentStatusChanged {
 
         @Test
-        @DisplayName("AUTHORIZED면 결제 조회 후 웹훅 발송")
-        void authorizedSendsWebhook() {
+        @DisplayName("AUTHORIZED면 웹훅 발송 안 함 (영수증은 ReceiptOnPaymentApprovedListener에서 처리)")
+        void authorizedNoWebhook() {
             PaymentStatusChangedEvent event = PaymentStatusChangedEvent.from(PAYMENT_ID, PaymentStatus.AUTHORIZED);
-            Payment payment = new Payment(
-                    PaymentId.from(PAYMENT_ID), MERCHANT_ID, AMOUNT,
-                    "ord-1", "주문", "a@a.com", "홍길동", "https://cb"
-            );
-            payment.startAuthorization();
-            payment.authorizeSuccess("a", "t", java.time.LocalDateTime.now());
-            when(paymentRepository.load(PaymentId.from(PAYMENT_ID))).thenReturn(Optional.of(payment));
 
             listener.onPaymentStatusChanged(event);
 
-            verify(paymentRepository).load(PaymentId.from(PAYMENT_ID));
-            ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
-            verify(paymentWebhookService).sendWebhook(captor.capture());
-            assertThat(captor.getValue().getId()).isEqualTo(PAYMENT_ID);
+            verify(paymentRepository, never()).load(any());
+            verify(paymentWebhookService, never()).sendWebhook(any());
         }
 
         @Test
@@ -124,13 +114,14 @@ class PaymentDomainEventListenerTest {
         }
 
         @Test
-        @DisplayName("결제 없으면 웹훅 미호출")
+        @DisplayName("FAILED/CANCELED 시 결제 없으면 웹훅 미호출")
         void paymentNotFound() {
-            PaymentStatusChangedEvent event = PaymentStatusChangedEvent.from(PAYMENT_ID, PaymentStatus.AUTHORIZED);
+            PaymentStatusChangedEvent event = PaymentStatusChangedEvent.from(PAYMENT_ID, PaymentStatus.FAILED);
             when(paymentRepository.load(PaymentId.from(PAYMENT_ID))).thenReturn(Optional.empty());
 
             listener.onPaymentStatusChanged(event);
 
+            verify(paymentRepository).load(PaymentId.from(PAYMENT_ID));
             verify(paymentWebhookService, never()).sendWebhook(any());
         }
     }

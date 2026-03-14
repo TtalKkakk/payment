@@ -1,7 +1,7 @@
 package com.example.pg.merchant.infrastructure.adapter;
 
 import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
-import com.example.pg.receipt.command.application.port.MerchantPort;
+import com.example.pg.payment.command.application.port.MerchantPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

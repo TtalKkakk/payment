@@ -1,4 +1,4 @@
-package com.example.pg.receipt.command.application.port;
+package com.example.pg.payment.command.application.port;
 
 /**
  * 영수증 발급 시 가맹점명을 조회하는 포트 (안티커럽션).

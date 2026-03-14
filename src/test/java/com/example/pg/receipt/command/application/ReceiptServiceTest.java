@@ -1,10 +1,11 @@
 package com.example.pg.receipt.command.application;
 
 import com.example.pg.common.exception.BusinessException;
-import com.example.pg.receipt.command.application.port.MerchantPort;
-import com.example.pg.receipt.command.application.port.PaymentPort;
-import com.example.pg.receipt.command.application.port.dto.PaymentSnapshotForReceipt;
+import com.example.pg.payment.command.application.port.MerchantPort;
+import com.example.pg.payment.command.application.port.PaymentPort;
+import com.example.pg.payment.command.application.port.dto.PaymentSnapshotForReceiptDto;
 import com.example.pg.receipt.domain.aggregate.Receipt;
+import com.example.pg.receipt.domain.vo.ReceiptId;
 import com.example.pg.receipt.infrastructure.persistence.ReceiptRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -31,8 +32,8 @@ class ReceiptServiceTest {
     private static final String MERCHANT_ID = "merchant-1";
     private static final String MERCHANT_NAME = "테스트 가맹점";
 
-    private static PaymentSnapshotForReceipt authorizedSnapshot() {
-        return new PaymentSnapshotForReceipt(
+    private static PaymentSnapshotForReceiptDto authorizedSnapshot() {
+        return new PaymentSnapshotForReceiptDto(
                 PAYMENT_ID,
                 MERCHANT_ID,
                 10_000L,
@@ -86,7 +87,7 @@ class ReceiptServiceTest {
             when(paymentPort.existsPayment(PAYMENT_ID)).thenReturn(true);
             when(paymentPort.findAuthorizedPayment(PAYMENT_ID)).thenReturn(Optional.of(authorizedSnapshot()));
             Receipt existingReceipt = new Receipt(
-                    com.example.pg.receipt.domain.vo.ReceiptId.generate(),
+                    ReceiptId.generate(),
                     PAYMENT_ID,
                     MERCHANT_ID,
                     MERCHANT_NAME,
