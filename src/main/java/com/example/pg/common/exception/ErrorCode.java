@@ -56,6 +56,11 @@ public enum ErrorCode {
     /** 승인 요청 실패 (Tx2 실패). 가맹점: "다시 결제하기" 또는 "같은 결제로 승인만 재시도" 안내 */
     AUTHORIZATION_START_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E030", "결제는 접수됐으나 승인 요청 전송에 실패했습니다. 다시 시도하거나 같은 결제로 승인만 재시도해 주세요."),
 
+    // ----- Receipt 도메인 -----
+    RECEIPT_NOT_FOUND(HttpStatus.NOT_FOUND, "E040", "영수증을 찾을 수 없습니다. (receiptId=%s)"),
+    RECEIPT_ALREADY_VOIDED(HttpStatus.CONFLICT, "E041", "이미 무효화된 영수증입니다."),
+    RECEIPT_CANNOT_ISSUE(HttpStatus.CONFLICT, "E042", "승인 완료된 결제에만 영수증을 발급할 수 있습니다."),
+
     INTERNAL(HttpStatus.INTERNAL_SERVER_ERROR, "E999", "서버 오류가 발생했습니다.");
 
     private final HttpStatus status;
