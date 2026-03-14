@@ -8,8 +8,11 @@ import com.example.pg.payment.presentation.dto.AuthorizePaymentRequest;
 import com.example.pg.payment.presentation.dto.PaymentDetailResponse;
 import com.example.pg.payment.presentation.dto.CreatePaymentRequest;
 import com.example.pg.payment.presentation.dto.CreatePaymentResponse;
+import com.example.pg.receipt.command.application.ReceiptPdfService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +29,7 @@ public class PaymentController {
 
     private final PaymentService paymentService;
     private final PaymentQueryService paymentQueryService;
+    private final ReceiptPdfService receiptPdfService;
 
     /**
      * 결제 단건 조회.
@@ -94,5 +98,22 @@ public class PaymentController {
     ) {
         paymentService.cancelPayment(merchantId, paymentId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 해당 결제의 영수증 PDF 다운로드.
+     * 해당 가맹점의 결제에 대해서만 발급 가능.
+     */
+    @GetMapping("/{paymentId}/receipt/pdf")
+    public ResponseEntity<byte[]> getReceiptPdf(
+            @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
+            @PathVariable String paymentId
+    ) {
+        byte[] pdf = receiptPdfService.generateByPaymentId(paymentId, merchantId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "receipt-" + paymentId + ".pdf");
+        headers.setContentLength(pdf.length);
+        return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
     }
 }
