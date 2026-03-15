@@ -1,6 +1,6 @@
 package com.example.pg.payment.command.application;
 
-import com.example.pg.payment.command.application.port.RefundPort;
+import com.example.pg.payment.command.application.port.CardCompanyPort;
 import com.example.pg.payment.domain.aggregate.Payment;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.AuthorizationStartedEvent;
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final CardCompanyRepository cardCompanyRepository;
-    private final RefundPort refundPort;
+    private final CardCompanyPortRegistry portRegistry;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -125,7 +125,11 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "해당 결제에 대한 취소 권한이 없습니다.");
         }
 
-        if (!refundPort.requestRefund(payment.getId(), payment.getAmount())) {
+        if (payment.getCardCompany() == null) {
+            throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제에 카드사 정보가 없어 환불할 수 없습니다.");
+        }
+        CardCompanyPort port = portRegistry.getPortOrThrow(payment.getCardCompany().getCode());
+        if (!port.requestRefund(payment.getId())) {
             throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "환불 요청 실패");
         }
 

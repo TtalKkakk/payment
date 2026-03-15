@@ -13,6 +13,8 @@ import com.example.pg.payment.command.application.port.dto.RegistrationSessionDt
 import com.example.pg.payment.presentation.dto.CardCompanyApproveRequest;
 import com.example.pg.payment.presentation.dto.CardCompanyApproveResponse;
 import com.example.pg.payment.presentation.dto.CardCompanyErrorResponse;
+import com.example.pg.payment.presentation.dto.RefundRequest;
+import com.example.pg.payment.presentation.dto.RefundResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,7 @@ import java.time.format.DateTimeParseException;
 public class HttpCardCompanyAdapter implements CardCompanyPort {
 
     private static final String APPROVE_PATH = "api/pg/payments/approve";
+    private static final String REFUND_PATH = "api/pg/payments/refund";
     private static final String SESSION_PATH = "api/card-registration-session";
     private static final String BILLING_KEY_PATH = "api/billing-keys";
     private final RestTemplate restTemplate;
@@ -116,6 +119,46 @@ public class HttpCardCompanyAdapter implements CardCompanyPort {
             return new BillingKeyTokenDto(body.billingKeyToken());
         } catch (HttpStatusCodeException e) {
             throw toBusinessException(e, "빌링키 발급");
+        }
+    }
+
+    @Override
+    public boolean requestRefund(String paymentId) {
+        String url = baseUrl.endsWith("/") ? baseUrl + REFUND_PATH : baseUrl + "/" + REFUND_PATH;
+        RefundRequest request = new RefundRequest(paymentId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<RefundRequest> entity = new HttpEntity<>(request, headers);
+
+        try {
+            ResponseEntity<RefundResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    entity,
+                    RefundResponse.class
+            );
+            RefundResponse body = response.getBody();
+            if (body != null && body.success()) {
+                return true;
+            }
+            log.warn("카드사 환불 실패 paymentId={}, success=false", paymentId);
+            return false;
+        } catch (HttpStatusCodeException e) {
+            String body = e.getResponseBodyAsString();
+            if (body != null && !body.isBlank()) {
+                try {
+                    CardCompanyErrorResponse err = objectMapper.readValue(body, CardCompanyErrorResponse.class);
+                    log.warn("카드사 환불 4xx paymentId={}, code={}, message={}", paymentId, err.code(), err.message());
+                } catch (Exception ignored) {
+                    log.warn("카드사 환불 4xx paymentId={}, body={}", paymentId, body);
+                }
+            } else {
+                log.warn("카드사 환불 4xx paymentId={}, status={}", paymentId, e.getStatusCode());
+            }
+            return false;
+        } catch (Exception e) {
+            log.warn("카드사 환불 요청 실패 paymentId={}, url={}", paymentId, url, e);
+            return false;
         }
     }
 

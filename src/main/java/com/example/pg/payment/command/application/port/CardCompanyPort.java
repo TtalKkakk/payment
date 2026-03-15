@@ -24,4 +24,13 @@ public interface CardCompanyPort {
     PaymentApproveDto approve(String paymentId, long amount, String billingKeyToken);
     RegistrationSessionDto createRegistrationSession(String returnUrl);
     BillingKeyTokenDto issueBillingKey(String authCode);
+
+    /**
+     * 카드사에 결제 환불(취소) 요청.
+     * POST /api/pg/payments/refund Body: { paymentId }. 승인 건만 취소·잔액 복원.
+     *
+     * @param paymentId PG 결제 ID (승인 시 사용한 값과 동일)
+     * @return 환불 성공 시 true, 4xx/실패 시 false
+     */
+    boolean requestRefund(String paymentId);
 }

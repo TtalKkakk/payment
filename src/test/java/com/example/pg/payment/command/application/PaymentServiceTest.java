@@ -11,7 +11,8 @@ import com.example.pg.payment.infrastructure.persistence.CardCompanyRepository;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
-import com.example.pg.payment.command.application.port.RefundPort;
+import com.example.pg.payment.command.application.CardCompanyPortRegistry;
+import com.example.pg.payment.command.application.port.CardCompanyPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,9 @@ class PaymentServiceTest {
     @Mock
     private CardCompanyRepository cardCompanyRepository;
     @Mock
-    private RefundPort refundPort;
+    private CardCompanyPortRegistry portRegistry;
+    @Mock
+    private CardCompanyPort cardCompanyPort;
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
@@ -253,20 +256,22 @@ class PaymentServiceTest {
                     .isInstanceOf(BusinessException.class)
                     .matches(e -> ((BusinessException) e).getErrorCode() == ErrorCode.PAYMENT_INVALID_STATUS);
 
-            verify(refundPort, never()).requestRefund(any(), anyLong());
+            verify(portRegistry, never()).getPortOrThrow(any());
         }
 
         @Test
         @DisplayName("환불 요청 실패 시 PAYMENT_INVALID_STATUS")
         void refundFails() {
+            CardCompany cardCompany = CardCompany.create(CARD_COMPANY_CODE, "신한", "https://shinhan.com");
             Payment payment = new Payment(
                     PaymentId.from(PAYMENT_ID), MERCHANT_ID, AMOUNT,
-                    "ord-1", "주문", "a@a.com", "홍길동", "https://cb"
+                    "ord-1", "주문", "a@a.com", "홍길동", "https://cb", cardCompany
             );
             payment.startAuthorization();
             payment.authorizeSuccess("a", "t", java.time.LocalDateTime.now());
             when(paymentRepository.load(PaymentId.from(PAYMENT_ID))).thenReturn(Optional.of(payment));
-            when(refundPort.requestRefund(PAYMENT_ID, AMOUNT)).thenReturn(false);
+            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyPort);
+            when(cardCompanyPort.requestRefund(PAYMENT_ID)).thenReturn(false);
 
             assertThatThrownBy(() -> paymentService.cancelPayment(MERCHANT_ID, PAYMENT_ID))
                     .isInstanceOf(BusinessException.class)
@@ -276,14 +281,16 @@ class PaymentServiceTest {
         @Test
         @DisplayName("성공 시 cancel 후 PaymentStatusChangedEvent 발행")
         void success() {
+            CardCompany cardCompany = CardCompany.create(CARD_COMPANY_CODE, "신한", "https://shinhan.com");
             Payment payment = new Payment(
                     PaymentId.from(PAYMENT_ID), MERCHANT_ID, AMOUNT,
-                    "ord-1", "주문", "a@a.com", "홍길동", "https://cb"
+                    "ord-1", "주문", "a@a.com", "홍길동", "https://cb", cardCompany
             );
             payment.startAuthorization();
             payment.authorizeSuccess("a", "t", java.time.LocalDateTime.now());
             when(paymentRepository.load(PaymentId.from(PAYMENT_ID))).thenReturn(Optional.of(payment));
-            when(refundPort.requestRefund(PAYMENT_ID, AMOUNT)).thenReturn(true);
+            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyPort);
+            when(cardCompanyPort.requestRefund(PAYMENT_ID)).thenReturn(true);
 
             paymentService.cancelPayment(MERCHANT_ID, PAYMENT_ID);
 
