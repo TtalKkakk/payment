@@ -8,7 +8,7 @@ import com.example.pg.merchantapplication.domain.vo.ContactEmail;
 import com.example.pg.merchantapplication.domain.vo.ContactPhone;
 import com.example.pg.merchantapplication.domain.vo.PasswordHash;
 import com.example.pg.merchantapplication.infrastructure.persistence.MerchantApplicationRepository;
-import com.example.pg.merchantapplication.query.application.dto.PagedApplicationsResult;
+import com.example.pg.merchantapplication.query.application.dto.PagedApplicationsResultDto;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -171,7 +171,7 @@ class MerchantApplicationQueryServiceTest {
             Page<MerchantApplication> page = emptyPage();
             when(merchantApplicationRepository.findAllByStatusNotIn(eq(EXCLUDED), any(Pageable.class))).thenReturn(page);
 
-            PagedApplicationsResult result = merchantApplicationQueryService.findPaged(null, null, 0);
+            PagedApplicationsResultDto result = merchantApplicationQueryService.findPaged(null, null, 0);
 
             assertThat(result.content()).isEmpty();
             verify(merchantApplicationRepository).findAllByStatusNotIn(eq(EXCLUDED), any(Pageable.class));
@@ -183,7 +183,7 @@ class MerchantApplicationQueryServiceTest {
             Page<MerchantApplication> page = emptyPage();
             when(merchantApplicationRepository.findByStatus(eq(MerchantApplicationStatus.PENDING), any(Pageable.class))).thenReturn(page);
 
-            PagedApplicationsResult result = merchantApplicationQueryService.findPaged("PENDING", null, 0);
+            PagedApplicationsResultDto result = merchantApplicationQueryService.findPaged("PENDING", null, 0);
 
             assertThat(result.content()).isEmpty();
             verify(merchantApplicationRepository).findByStatus(eq(MerchantApplicationStatus.PENDING), any(Pageable.class));
@@ -195,7 +195,7 @@ class MerchantApplicationQueryServiceTest {
             Page<MerchantApplication> page = emptyPage();
             when(merchantApplicationRepository.findByBusinessNumberContainingAndStatusNotIn(eq("123"), eq(EXCLUDED), any(Pageable.class))).thenReturn(page);
 
-            PagedApplicationsResult result = merchantApplicationQueryService.findPaged(null, "123", 0);
+            PagedApplicationsResultDto result = merchantApplicationQueryService.findPaged(null, "123", 0);
 
             assertThat(result.content()).isEmpty();
             verify(merchantApplicationRepository).findByBusinessNumberContainingAndStatusNotIn(eq("123"), eq(EXCLUDED), any(Pageable.class));
@@ -207,7 +207,7 @@ class MerchantApplicationQueryServiceTest {
             Page<MerchantApplication> page = emptyPage();
             when(merchantApplicationRepository.findByBusinessNumberContainingAndStatus(eq("123"), eq(MerchantApplicationStatus.APPROVED), any(Pageable.class))).thenReturn(page);
 
-            PagedApplicationsResult result = merchantApplicationQueryService.findPaged("APPROVED", "123", 0);
+            PagedApplicationsResultDto result = merchantApplicationQueryService.findPaged("APPROVED", "123", 0);
 
             assertThat(result.content()).isEmpty();
             verify(merchantApplicationRepository).findByBusinessNumberContainingAndStatus(eq("123"), eq(MerchantApplicationStatus.APPROVED), any(Pageable.class));

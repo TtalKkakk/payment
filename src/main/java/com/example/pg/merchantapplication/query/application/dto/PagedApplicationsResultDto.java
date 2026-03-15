@@ -9,15 +9,15 @@ import java.util.List;
 /**
  * 가맹점 신청 목록 + 페이지네이션 블록 정보.
  */
-public record PagedApplicationsResult(
+public record PagedApplicationsResultDto(
         List<MerchantApplication> content,
         Page<MerchantApplication> page,
         int startPage,
         int endPage
 ) {
-    public static PagedApplicationsResult of(Page<MerchantApplication> page, int blockSize) {
+    public static PagedApplicationsResultDto of(Page<MerchantApplication> page, int blockSize) {
         PaginationHelper.PaginationBlockInfo block = PaginationHelper.computeBlock(page, blockSize);
-        return new PagedApplicationsResult(
+        return new PagedApplicationsResultDto(
                 page.getContent(),
                 page,
                 block.startPage(),

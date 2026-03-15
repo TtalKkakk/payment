@@ -66,8 +66,14 @@ public class MerchantApplication {
     @Column(name = "version")
     private Long version;
 
-    public MerchantApplication(String id, String name, String businessNumber,
-                              String contactPhone, String contactEmail, String passwordHash) {
+    public MerchantApplication(
+            String id,
+            String name,
+            String businessNumber,
+            String contactPhone,
+            String contactEmail,
+            String passwordHash
+    ) {
         this.id = id;
         this.name = name;
         this.businessNumber = businessNumber;
@@ -101,8 +107,13 @@ public class MerchantApplication {
      * id는 넣지 않아 Spring Data JPA save() 시 persist()가 호출되도록 한다. 실제 id는 @PrePersist에서 부여.
      * 검증은 Value Object(ApplicationName, BusinessNumber 등)에서 수행되므로, 여기서는 VO 값을 넣기만 한다.
      */
-    public static MerchantApplication create(ApplicationName name, BusinessNumber businessNumber,
-                                            ContactPhone contactPhone, ContactEmail contactEmail, PasswordHash passwordHash) {
+    public static MerchantApplication create(
+            ApplicationName name,
+            BusinessNumber businessNumber,
+            ContactPhone contactPhone,
+            ContactEmail contactEmail,
+            PasswordHash passwordHash
+    ) {
         return new MerchantApplication(
                 null,
                 name.value(),
@@ -178,7 +189,12 @@ public class MerchantApplication {
      * 재신청으로 되살린다. CANCELLED / SUBSCRIPTION_ENDED / REJECTED 일 때만 가능.
      * 기존 id·business_number·created_at 유지, 나머지 갱신 후 PENDING으로 전이.
      */
-    public void reapply(ApplicationName name, ContactPhone contactPhone, ContactEmail contactEmail, PasswordHash passwordHash) {
+    public void reapply(
+            ApplicationName name,
+            ContactPhone contactPhone,
+            ContactEmail contactEmail,
+            PasswordHash passwordHash
+    ) {
         if (this.status != MerchantApplicationStatus.CANCELLED
                 && this.status != MerchantApplicationStatus.SUBSCRIPTION_ENDED
                 && this.status != MerchantApplicationStatus.REJECTED) {

@@ -10,6 +10,7 @@ import com.example.pg.merchantapplication.presentation.dto.ApplyMerchantResponse
 import com.example.pg.merchantapplication.query.application.MerchantApplicationQueryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
  * - 신청 접수 (POST)
  * - PG사 페이지에서 자신의 신청 승인 여부 조회 (POST)
  */
+@Slf4j
 @RestController
 @RequestMapping("/merchant-applications")
 @RequiredArgsConstructor
@@ -29,6 +31,7 @@ public class MerchantApplicationController {
 
     @PostMapping
     public ResponseEntity<ApplyMerchantResponse> apply(@Valid @RequestBody ApplyMerchantRequest request) {
+        log.debug("[MerchantApplication] API apply businessNumber={} name={}", request.businessNumber(), request.name());
         MerchantApplication merchantApplication = merchantApplicationService.apply(
                 request.name(),
                 request.businessNumber(),
@@ -46,6 +49,7 @@ public class MerchantApplicationController {
     @PostMapping("/business-number")
     public ResponseEntity<ApplicationStatusResponse> getStatusByBusinessNumber(
             @Valid @RequestBody ApplicationStatusRequest request) {
+        log.debug("[MerchantApplication] API getStatusByBusinessNumber businessNumber={}", request.businessNumber());
         MerchantApplication merchantApplication = merchantApplicationQueryService.getByBusinessNumberAndPassword(
                 request.businessNumber(), request.password());
         return ResponseEntity.ok(ApplicationStatusResponse.from(merchantApplication));
@@ -57,6 +61,7 @@ public class MerchantApplicationController {
     @PostMapping("/delete")
     public ResponseEntity<Void> deleteByBusinessNumberAndPassword(
             @Valid @RequestBody DeleteMerchantApplicationRequest request) {
+        log.debug("[MerchantApplication] API delete businessNumber={}", request.businessNumber());
         merchantApplicationService.deleteByBusinessNumberAndPassword(request.businessNumber(), request.password());
         return ResponseEntity.noContent().build();
     }

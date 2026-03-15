@@ -5,9 +5,10 @@ import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
 import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
 import com.example.pg.merchantapplication.infrastructure.persistence.MerchantApplicationRepository;
-import com.example.pg.merchantapplication.query.application.dto.PagedApplicationsResult;
+import com.example.pg.merchantapplication.query.application.dto.PagedApplicationsResultDto;
 import com.example.pg.merchantapplication.query.application.dto.SearchType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MerchantApplicationQueryService {
@@ -33,6 +35,7 @@ public class MerchantApplicationQueryService {
      */
     @Transactional(readOnly = true)
     public MerchantApplication findById(String id) {
+        log.debug("[MerchantApplication] Query findById applicationId={}", id);
         return merchantApplicationRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_APPLICATION_NOT_FOUND, id));
     }
@@ -42,6 +45,7 @@ public class MerchantApplicationQueryService {
      */
     @Transactional(readOnly = true)
     public MerchantApplication getByBusinessNumberAndPassword(String businessNumber, String rawPassword) {
+        log.debug("[MerchantApplication] Query getByBusinessNumber businessNumber={}", businessNumber);
         MerchantApplication merchantApplication = merchantApplicationRepository.findByBusinessNumber(businessNumber)
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_PASSWORD_MISMATCH));
         if (!passwordEncoder.matches(rawPassword, merchantApplication.getPasswordHash())) {
@@ -59,14 +63,15 @@ public class MerchantApplicationQueryService {
      * businessNumber: 사업자번호 부분 검색 (null/blank면 검색 안 함)
      */
     @Transactional(readOnly = true)
-    public PagedApplicationsResult findPaged(String status, String businessNumber, int pageNumber) {
+    public PagedApplicationsResultDto findPaged(String status, String businessNumber, int pageNumber) {
+        log.debug("[MerchantApplication] Query findPaged status={} businessNumber={} page={}", status, businessNumber, pageNumber);
         if (pageNumber < 0) {
             pageNumber = 0;
         }
         SearchType key = SearchType.from(status, businessNumber);
         Pageable pageable = PageRequest.of(pageNumber, DEFAULT_PAGE_SIZE, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<MerchantApplication> page = search(key, status, businessNumber, pageable);
-        return PagedApplicationsResult.of(page, PAGE_BLOCK_SIZE);
+        return PagedApplicationsResultDto.of(page, PAGE_BLOCK_SIZE);
     }
 
     private static final List<MerchantApplicationStatus> EXCLUDED_FROM_DEFAULT_LIST =

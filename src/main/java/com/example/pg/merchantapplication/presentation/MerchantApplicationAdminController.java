@@ -3,8 +3,9 @@ package com.example.pg.merchantapplication.presentation;
 import com.example.pg.merchantapplication.command.application.MerchantApplicationService;
 import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
 import com.example.pg.merchantapplication.query.application.MerchantApplicationQueryService;
-import com.example.pg.merchantapplication.query.application.dto.PagedApplicationsResult;
+import com.example.pg.merchantapplication.query.application.dto.PagedApplicationsResultDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 /**
  * 관리자 페이지 (HTML 폼) - 가맹점 심사 관리
  */
+@Slf4j
 @Controller
 @RequestMapping("/admin/merchant-applications")
 @RequiredArgsConstructor
@@ -40,7 +42,8 @@ public class MerchantApplicationAdminController {
             HttpServletRequest request,
             Model model
     ) {
-        PagedApplicationsResult result = merchantApplicationQueryService.findPaged(status, businessNumber, page);
+        log.debug("[MerchantApplication] Admin list status={} businessNumber={} page={}", status, businessNumber, page);
+        PagedApplicationsResultDto result = merchantApplicationQueryService.findPaged(status, businessNumber, page);
         model.addAttribute("page", result.page());
         model.addAttribute("applications", result.content());
         model.addAttribute("status", status);
@@ -56,6 +59,7 @@ public class MerchantApplicationAdminController {
      */
     @GetMapping("/{applicationId}")
     public String detail(@PathVariable String applicationId, HttpServletRequest request, Model model) {
+        log.debug("[MerchantApplication] Admin detail applicationId={}", applicationId);
         MerchantApplication merchantApplication = merchantApplicationQueryService.findById(applicationId);
         model.addAttribute("merchantApplication", merchantApplication);
         model.addAttribute("_csrf", request.getAttribute("_csrf"));
@@ -67,6 +71,7 @@ public class MerchantApplicationAdminController {
      */
     @PostMapping("/{applicationId}/approve")
     public String approve(@PathVariable String applicationId, RedirectAttributes redirectAttributes) {
+        log.debug("[MerchantApplication] Admin approve applicationId={}", applicationId);
         merchantApplicationService.approve(applicationId);
         redirectAttributes.addFlashAttribute("message", "승인 완료되었습니다.");
         return "redirect:/admin/merchant-applications/" + applicationId;
@@ -81,6 +86,7 @@ public class MerchantApplicationAdminController {
             @RequestParam(required = false) String reason,
             RedirectAttributes redirectAttributes
     ) {
+        log.debug("[MerchantApplication] Admin reject applicationId={} reasonLength={}", applicationId, reason != null ? reason.length() : 0);
         merchantApplicationService.reject(applicationId, reason);
         redirectAttributes.addFlashAttribute("message", "거절 처리되었습니다.");
         return "redirect:/admin/merchant-applications/" + applicationId;

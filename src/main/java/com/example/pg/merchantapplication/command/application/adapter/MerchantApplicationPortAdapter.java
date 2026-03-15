@@ -3,9 +3,11 @@ package com.example.pg.merchantapplication.command.application.adapter;
 import com.example.pg.merchant.command.application.port.MerchantPort;
 import com.example.pg.merchantapplication.command.application.MerchantApplicationService;
 import com.example.pg.merchantapplication.command.application.port.MerchantApplicationPort;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class MerchantApplicationPortAdapter implements MerchantApplicationPort {
 
@@ -22,6 +24,7 @@ public class MerchantApplicationPortAdapter implements MerchantApplicationPort {
 
     @Override
     public void createFromApprovedApplication(String applicationId, String name) {
+        log.debug("[MerchantApplication] Port createFromApprovedApplication applicationId={} name={}", applicationId, name);
         merchantPort.createFromApprovedApplication(applicationId, name);
     }
 
@@ -30,6 +33,7 @@ public class MerchantApplicationPortAdapter implements MerchantApplicationPort {
         if (applicationId == null || applicationId.isBlank()) {
             return;
         }
+        log.debug("[MerchantApplication] Port markSubscriptionEnded applicationId={}", applicationId);
         merchantApplicationService.markSubscriptionEnded(applicationId);
     }
 }

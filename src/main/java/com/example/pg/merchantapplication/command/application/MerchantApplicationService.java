@@ -9,8 +9,10 @@ import com.example.pg.merchantapplication.domain.vo.ContactEmail;
 import com.example.pg.merchantapplication.domain.vo.ContactPhone;
 import com.example.pg.merchantapplication.domain.vo.PasswordHash;
 import com.example.pg.merchantapplication.domain.event.MerchantApplicationApprovedEvent;
+import com.example.pg.merchantapplication.domain.event.MerchantApplicationCancelledEvent;
 import com.example.pg.merchantapplication.domain.event.MerchantApplicationRejectedEvent;
-import com.example.pg.merchantapplication.domain.event.MerchantApplicationSubmittedEvent;
+import com.example.pg.merchantapplication.domain.event.MerchantApplicationPendedEvent;
+import com.example.pg.merchantapplication.domain.event.MerchantApplicationSubscriptionEndedEvent;
 import com.example.pg.merchantapplication.infrastructure.persistence.MerchantApplicationRepository;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
@@ -34,12 +36,29 @@ public class MerchantApplicationService {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     *
+     * @param name
+     * @param businessNumber
+     * @param contactPhone
+     * @param contactEmail
+     * @param rawPassword
+     * @return MerchantApplication
+     * MerchantApplication.Status == CANCELLED OR SUBSCRIPTION_ENDED OR REJECTED
+     * MerchantApplication가 soft delete된 엔터티가 존재하면 reapply(update)
+     * 그렇지 않으면 save(create)
+     */
     @Transactional
     public MerchantApplication apply(String name, String businessNumber, String contactPhone, String contactEmail, String rawPassword) {
-        if (merchantApplicationRepository.existsByBusinessNumberAndStatusIn(businessNumber,
-                List.of(MerchantApplicationStatus.PENDING, MerchantApplicationStatus.APPROVED))) {
+        log.debug("[MerchantApplication] apply start businessNumber={} name={}", businessNumber, name);
+
+        if (merchantApplicationRepository.existsByBusinessNumberAndStatusIn(
+                businessNumber,
+                List.of(MerchantApplicationStatus.PENDING, MerchantApplicationStatus.APPROVED))
+        ) {
             throw new BusinessException(ErrorCode.DUPLICATE_BUSINESS_NUMBER);
         }
+
         String passwordHash = passwordEncoder.encode(rawPassword);
         MerchantApplication merchantApplication = merchantApplicationRepository.findByBusinessNumber(businessNumber)
                 .filter(app -> app.getStatus() == MerchantApplicationStatus.CANCELLED
@@ -63,13 +82,13 @@ public class MerchantApplicationService {
                 ));
         merchantApplicationRepository.save(merchantApplication);
 
-        applicationEventPublisher.publishEvent(MerchantApplicationSubmittedEvent.from(
+        applicationEventPublisher.publishEvent(MerchantApplicationPendedEvent.from(
                 merchantApplication.getId(),
                 merchantApplication.getName(),
                 merchantApplication.getBusinessNumber(),
                 merchantApplication.getContactEmail())
         );
-
+        log.debug("[MerchantApplication] apply committed applicationId={}", merchantApplication.getId());
         return merchantApplication;
     }
 
@@ -78,6 +97,7 @@ public class MerchantApplicationService {
      */
     @Transactional
     public void deleteByBusinessNumberAndPassword(String businessNumber, String rawPassword) {
+        log.debug("[MerchantApplication] deleteByBusinessNumber start businessNumber={}", businessNumber);
         MerchantApplication application = merchantApplicationRepository.findByBusinessNumber(businessNumber)
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_PASSWORD_MISMATCH));
         if (application.getStatus() != MerchantApplicationStatus.PENDING) {
@@ -88,10 +108,17 @@ public class MerchantApplicationService {
         }
         application.cancel();
         merchantApplicationRepository.save(application);
+        applicationEventPublisher.publishEvent(MerchantApplicationCancelledEvent.from(
+                application.getId(),
+                application.getName(),
+                businessNumber
+        ));
+        log.debug("[MerchantApplication] deleteByBusinessNumber committed businessNumber={}", businessNumber);
     }
 
     @Transactional
     public void approve(String applicationId) {
+        log.debug("[MerchantApplication] approve start applicationId={}", applicationId);
         MerchantApplication merchantApplication = merchantApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_APPLICATION_NOT_FOUND, applicationId));
 
@@ -107,10 +134,12 @@ public class MerchantApplicationService {
                 merchantApplication.getId(),
                 merchantApplication.getName())
         );
+        log.debug("[MerchantApplication] approve committed applicationId={}", applicationId);
     }
 
     @Transactional
     public void reject(String applicationId, String reason) {
+        log.debug("[MerchantApplication] reject start applicationId={} reasonLength={}", applicationId, reason != null ? reason.length() : 0);
         MerchantApplication merchantApplication = merchantApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_APPLICATION_NOT_FOUND, applicationId));
 
@@ -119,6 +148,7 @@ public class MerchantApplicationService {
 
         applicationEventPublisher.publishEvent(MerchantApplicationRejectedEvent.from(
                 merchantApplication.getId(), merchantApplication.getName(), reason));
+        log.debug("[MerchantApplication] reject committed applicationId={} reasonLength={}", applicationId, reason != null ? reason.length() : 0);
     }
 
     /**
@@ -126,11 +156,17 @@ public class MerchantApplicationService {
      */
     @Transactional
     public void markSubscriptionEnded(String applicationId) {
+        log.debug("[MerchantApplication] markSubscriptionEnded start applicationId={}", applicationId);
         MerchantApplication application = merchantApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_APPLICATION_NOT_FOUND, applicationId));
         MerchantApplicationStatus before = application.getStatus();
         application.subscriptionEnded();
         merchantApplicationRepository.save(application);
-        log.debug("[markSubscriptionEnded] applicationId={}, before={}, after=SUBSCRIPTION_ENDED", applicationId, before);
+        applicationEventPublisher.publishEvent(MerchantApplicationSubscriptionEndedEvent.from(
+                applicationId,
+                application.getName(),
+                before != null ? before.name() : null
+        ));
+        log.debug("[MerchantApplication] markSubscriptionEnded committed applicationId={}", applicationId);
     }
 }

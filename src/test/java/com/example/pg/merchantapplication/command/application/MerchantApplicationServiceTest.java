@@ -5,7 +5,7 @@ import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
 import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
 import com.example.pg.merchantapplication.domain.event.MerchantApplicationApprovedEvent;
 import com.example.pg.merchantapplication.domain.event.MerchantApplicationRejectedEvent;
-import com.example.pg.merchantapplication.domain.event.MerchantApplicationSubmittedEvent;
+import com.example.pg.merchantapplication.domain.event.MerchantApplicationPendedEvent;
 import com.example.pg.merchantapplication.domain.vo.ApplicationName;
 import com.example.pg.merchantapplication.domain.vo.BusinessNumber;
 import com.example.pg.merchantapplication.domain.vo.ContactEmail;
@@ -86,7 +86,7 @@ class MerchantApplicationServiceTest {
             assertThat(saved.getBusinessNumber()).isEqualTo(BUSINESS_NUMBER);
             assertThat(saved.getStatus()).isEqualTo(MerchantApplicationStatus.PENDING);
             assertThat(result).isSameAs(saved);
-            verify(applicationEventPublisher).publishEvent(any(MerchantApplicationSubmittedEvent.class));
+            verify(applicationEventPublisher).publishEvent(any(MerchantApplicationPendedEvent.class));
             verify(merchantApplicationPort, never()).createFromApprovedApplication(any(), any());
         }
 
@@ -128,7 +128,7 @@ class MerchantApplicationServiceTest {
             assertThat(existing.getContactPhone()).isEqualTo(PHONE);
             assertThat(existing.getContactEmail()).isEqualTo(EMAIL);
             assertThat(result).isSameAs(existing);
-            verify(applicationEventPublisher).publishEvent(any(MerchantApplicationSubmittedEvent.class));
+            verify(applicationEventPublisher).publishEvent(any(MerchantApplicationPendedEvent.class));
         }
 
         @Test
