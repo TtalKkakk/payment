@@ -1,9 +1,10 @@
 package com.example.pg.merchantapplication.command.application;
 
-import com.example.pg.merchantapplication.command.application.port.MerchantApplicationPort;
+import com.example.pg.merchant.domain.aggregate.Merchant;
+import com.example.pg.merchantapplication.presentation.port.MerchantApplicationPort;
 import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
 import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
-import com.example.pg.merchantapplication.domain.vo.ApplicationName;
+import com.example.pg.merchant.domain.vo.MerchantName;
 import com.example.pg.merchantapplication.domain.vo.BusinessNumber;
 import com.example.pg.merchantapplication.domain.vo.ContactEmail;
 import com.example.pg.merchantapplication.domain.vo.ContactPhone;
@@ -66,7 +67,7 @@ public class MerchantApplicationService {
                         || app.getStatus() == MerchantApplicationStatus.REJECTED)
                 .map(app -> {
                     app.reapply(
-                            ApplicationName.of(name),
+                            MerchantName.of(name),
                             ContactPhone.of(contactPhone),
                             ContactEmail.of(contactEmail),
                             PasswordHash.of(passwordHash)
@@ -74,7 +75,7 @@ public class MerchantApplicationService {
                     return app;
                 })
                 .orElseGet(() -> MerchantApplication.create(
-                        ApplicationName.of(name),
+                        MerchantName.of(name),
                         BusinessNumber.of(businessNumber),
                         ContactPhone.of(contactPhone),
                         ContactEmail.of(contactEmail),
@@ -125,13 +126,14 @@ public class MerchantApplicationService {
         merchantApplication.approve();
         merchantApplicationRepository.save(merchantApplication);
 
-        merchantApplicationPort.createFromApprovedApplication(
+        Merchant merchant =         merchantApplicationPort.createFromApprovedApplication(
                 merchantApplication.getId(),
-                merchantApplication.getName()
+                merchantApplication.getMerchantName()
         );
 
         applicationEventPublisher.publishEvent(MerchantApplicationApprovedEvent.from(
                 merchantApplication.getId(),
+                merchant.getId(),
                 merchantApplication.getName())
         );
         log.debug("[MerchantApplication] approve committed applicationId={}", applicationId);

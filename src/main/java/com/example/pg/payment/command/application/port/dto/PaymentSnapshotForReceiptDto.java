@@ -1,6 +1,6 @@
 package com.example.pg.payment.command.application.port.dto;
 
-import com.example.pg.payment.command.application.port.MerchantPort;
+import com.example.pg.merchant.presentation.port.MerchantPort;
 
 import java.time.LocalDateTime;
 

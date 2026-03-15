@@ -3,8 +3,9 @@ package com.example.pg.merchant.presentation;
 import com.example.pg.merchant.command.application.MerchantService;
 import com.example.pg.merchant.domain.aggregate.Merchant;
 import com.example.pg.merchant.query.application.MerchantQueryService;
-import com.example.pg.merchant.query.application.dto.PagedMerchantsResult;
+import com.example.pg.merchant.query.application.dto.PagedMerchantsResultDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * 관리자 페이지 (MVC) - 가맹점 목록/상세 조회, API 정지.
  * /admin/** 접근 시 로그인 필요 (SecurityConfig).
  */
+@Slf4j
 @Controller
 @RequestMapping("/admin/merchants")
 @RequiredArgsConstructor
@@ -38,7 +40,8 @@ public class MerchantAdminController {
             HttpServletRequest request,
             Model model
     ) {
-        PagedMerchantsResult result = merchantQueryService.findPaged(id, page);
+        log.debug("[Merchant] Admin list id={} page={}", id, page);
+        PagedMerchantsResultDto result = merchantQueryService.findPaged(id, page);
         model.addAttribute("merchants", result.content());
         model.addAttribute("page", result.page());
         model.addAttribute("startPage", result.startPage());
@@ -53,6 +56,7 @@ public class MerchantAdminController {
      */
     @GetMapping("/{merchantId}")
     public String detail(@PathVariable String merchantId, HttpServletRequest request, Model model) {
+        log.debug("[Merchant] Admin detail merchantId={}", merchantId);
         Merchant merchant = merchantQueryService.findById(merchantId);
         model.addAttribute("merchant", merchant);
         model.addAttribute("_csrf", request.getAttribute("_csrf"));
@@ -69,6 +73,7 @@ public class MerchantAdminController {
             @RequestParam(defaultValue = "0") int page,
             RedirectAttributes redirectAttributes
     ) {
+        log.info("[Merchant] Admin suspend merchantId={}", merchantId);
         merchantService.suspendMerchant(merchantId);
         redirectAttributes.addFlashAttribute("message", "API를 정지했습니다.");
         redirectAttributes.addAttribute("id", id);
@@ -86,6 +91,7 @@ public class MerchantAdminController {
             @RequestParam(defaultValue = "0") int page,
             RedirectAttributes redirectAttributes
     ) {
+        log.info("[Merchant] Admin activate merchantId={}", merchantId);
         merchantService.activateMerchant(merchantId);
         redirectAttributes.addFlashAttribute("message", "정지를 해제했습니다.");
         redirectAttributes.addAttribute("id", id);
@@ -103,6 +109,7 @@ public class MerchantAdminController {
             @RequestParam(defaultValue = "0") int page,
             RedirectAttributes redirectAttributes
     ) {
+        log.info("[Merchant] Admin withdraw merchantId={}", merchantId);
         merchantService.withdrawMerchantFromSuspended(merchantId);
         redirectAttributes.addFlashAttribute("message", "탈퇴 처리했습니다.");
         redirectAttributes.addAttribute("id", id);

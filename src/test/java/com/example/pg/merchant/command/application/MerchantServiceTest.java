@@ -1,12 +1,12 @@
 package com.example.pg.merchant.command.application;
 
-import com.example.pg.merchant.command.application.dto.RegenerateSecretResult;
+import com.example.pg.merchant.command.application.dto.RegenerateSecretResultDto;
 import com.example.pg.merchant.domain.aggregate.Merchant;
 import com.example.pg.merchant.domain.enumerate.MerchantStatus;
 import com.example.pg.merchant.domain.event.MerchantDeletedEvent;
 import com.example.pg.merchant.domain.event.MerchantSecretRegeneratedEvent;
 import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
-import com.example.pg.merchantapplication.command.application.port.MerchantApplicationPort;
+import com.example.pg.merchantapplication.presentation.port.MerchantApplicationPort;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -70,7 +70,7 @@ class MerchantServiceTest {
             Merchant merchant = activeMerchant();
             when(merchantRepository.findById(MERCHANT_ID)).thenReturn(Optional.of(merchant));
 
-            RegenerateSecretResult result = merchantService.regenerateSecret(MERCHANT_ID);
+            RegenerateSecretResultDto result = merchantService.regenerateSecret(MERCHANT_ID);
 
             assertThat(result.apiKey()).isEqualTo(API_KEY);
             assertThat(result.apiSecret()).isNotEqualTo(API_SECRET);

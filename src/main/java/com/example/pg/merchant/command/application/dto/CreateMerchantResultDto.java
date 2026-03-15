@@ -1,6 +1,6 @@
 package com.example.pg.merchant.command.application.dto;
 
-public record CreateMerchantResult(
+public record CreateMerchantResultDto(
         String apiKey,
         String apiSecret,
         String name

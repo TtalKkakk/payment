@@ -1,10 +1,10 @@
 package com.example.pg.merchant.query.application;
 
-import com.example.pg.merchant.command.application.port.MerchantPort;
+import com.example.pg.merchant.presentation.port.MerchantPort;
 import com.example.pg.merchant.domain.aggregate.Merchant;
 import com.example.pg.merchant.domain.enumerate.MerchantStatus;
 import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
-import com.example.pg.merchant.query.application.dto.PagedMerchantsResult;
+import com.example.pg.merchant.query.application.dto.PagedMerchantsResultDto;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -156,7 +156,7 @@ class MerchantQueryServiceTest {
             Page<Merchant> page = new PageImpl<>(List.of(activeMerchant()), pageable, 1);
             when(merchantRepository.findAll(any(Pageable.class))).thenReturn(page);
 
-            PagedMerchantsResult result = merchantQueryService.findPaged(null, 0);
+            PagedMerchantsResultDto result = merchantQueryService.findPaged(null, 0);
 
             assertThat(result.content()).hasSize(1);
             verify(merchantRepository).findAll(any(Pageable.class));
@@ -169,7 +169,7 @@ class MerchantQueryServiceTest {
             Page<Merchant> page = new PageImpl<>(List.of(activeMerchant()), pageable, 1);
             when(merchantRepository.findByIdContaining(eq("abc"), any(Pageable.class))).thenReturn(page);
 
-            PagedMerchantsResult result = merchantQueryService.findPaged("abc", 0);
+            PagedMerchantsResultDto result = merchantQueryService.findPaged("abc", 0);
 
             assertThat(result.content()).hasSize(1);
             verify(merchantRepository).findByIdContaining(eq("abc"), any(Pageable.class));

@@ -3,7 +3,7 @@ package com.example.pg.merchantapplication.domain.aggregate;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
-import com.example.pg.merchantapplication.domain.vo.ApplicationName;
+import com.example.pg.merchant.domain.vo.MerchantName;
 import com.example.pg.merchantapplication.domain.vo.BusinessNumber;
 import com.example.pg.merchantapplication.domain.vo.ContactEmail;
 import com.example.pg.merchantapplication.domain.vo.ContactPhone;
@@ -25,7 +25,7 @@ class MerchantApplicationTest {
 
     private static MerchantApplication createPending() {
         return MerchantApplication.create(
-                ApplicationName.of(NAME),
+                MerchantName.of(NAME),
                 BusinessNumber.of(BUSINESS_NUMBER),
                 ContactPhone.of(PHONE),
                 ContactEmail.of(EMAIL),
@@ -252,7 +252,7 @@ class MerchantApplicationTest {
             String businessNumber = app.getBusinessNumber();
 
             app.reapply(
-                    ApplicationName.of("새이름"),
+                    MerchantName.of("새이름"),
                     ContactPhone.of("010-9999-8888"),
                     ContactEmail.of("new@example.com"),
                     PasswordHash.of("newHash")
@@ -276,7 +276,7 @@ class MerchantApplicationTest {
             app.approve();
             app.subscriptionEnded();
             app.reapply(
-                    ApplicationName.of("재신청"),
+                    MerchantName.of("재신청"),
                     ContactPhone.of(PHONE),
                     ContactEmail.of(EMAIL),
                     PasswordHash.of(PASSWORD_HASH)
@@ -290,7 +290,7 @@ class MerchantApplicationTest {
             MerchantApplication app = createPending();
             app.reject("사유");
             app.reapply(
-                    ApplicationName.of("재신청"),
+                    MerchantName.of("재신청"),
                     ContactPhone.of(PHONE),
                     ContactEmail.of(EMAIL),
                     PasswordHash.of(PASSWORD_HASH)
@@ -304,7 +304,7 @@ class MerchantApplicationTest {
         void notReapplyable() {
             MerchantApplication app = createPending();
             assertThatThrownBy(() -> app.reapply(
-                    ApplicationName.of("x"),
+                    MerchantName.of("x"),
                     ContactPhone.of(PHONE),
                     ContactEmail.of(EMAIL),
                     PasswordHash.of(PASSWORD_HASH)))
@@ -313,7 +313,7 @@ class MerchantApplicationTest {
 
             app.approve();
             assertThatThrownBy(() -> app.reapply(
-                    ApplicationName.of("x"),
+                    MerchantName.of("x"),
                     ContactPhone.of(PHONE),
                     ContactEmail.of(EMAIL),
                     PasswordHash.of(PASSWORD_HASH)))

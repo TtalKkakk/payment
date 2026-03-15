@@ -1,4 +1,4 @@
-package com.example.pg.merchantapplication.command.application.port;
+package com.example.pg.merchantapplication.presentation.port;
 
 import com.example.pg.merchant.domain.aggregate.Merchant;
 import com.example.pg.merchant.domain.vo.MerchantName;

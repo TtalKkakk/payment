@@ -1,18 +1,22 @@
 package com.example.pg.merchant.command.application;
 
-import com.example.pg.merchant.command.application.dto.RegenerateSecretResult;
+import com.example.pg.merchant.command.application.dto.RegenerateSecretResultDto;
 import com.example.pg.merchant.domain.aggregate.Merchant;
+import com.example.pg.merchant.domain.event.MerchantActivatedEvent;
 import com.example.pg.merchant.domain.event.MerchantDeletedEvent;
 import com.example.pg.merchant.domain.event.MerchantSecretRegeneratedEvent;
+import com.example.pg.merchant.domain.event.MerchantSuspendedEvent;
 import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
-import com.example.pg.merchantapplication.command.application.port.MerchantApplicationPort;
+import com.example.pg.merchantapplication.presentation.port.MerchantApplicationPort;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MerchantService {
@@ -21,8 +25,14 @@ public class MerchantService {
     private final MerchantApplicationPort merchantApplicationPort;
     private final ApplicationEventPublisher applicationEventPublisher;
 
+    /**
+     * @param merchantId
+     * @return RegenerateSecretResultDto
+     * X-API-KEY 및 X-API-SECRET 재생성
+     */
     @Transactional
-    public RegenerateSecretResult regenerateSecret(String merchantId) {
+    public RegenerateSecretResultDto regenerateSecret(String merchantId) {
+        log.debug("[Merchant] regenerateSecret start merchantId={}", merchantId);
         Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_NOT_FOUND, merchantId));
 
@@ -30,7 +40,8 @@ public class MerchantService {
 
         applicationEventPublisher.publishEvent(MerchantSecretRegeneratedEvent.from(merchant.getId()));
 
-        return new RegenerateSecretResult(merchant.getApiKey(), merchant.getApiSecret());
+        log.debug("[Merchant] regenerateSecret committed merchantId={}", merchantId);
+        return new RegenerateSecretResultDto(merchant.getApiKey(), merchant.getApiSecret());
     }
 
     /**
@@ -38,6 +49,7 @@ public class MerchantService {
      */
     @Transactional
     public void deleteMerchant(String merchantId) {
+        log.debug("[Merchant] deleteMerchant start merchantId={}", merchantId);
         Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_NOT_FOUND, merchantId));
 
@@ -47,6 +59,7 @@ public class MerchantService {
         merchantApplicationPort.markSubscriptionEnded(merchant.getApplicationId());
 
         applicationEventPublisher.publishEvent(MerchantDeletedEvent.from(merchantId, merchant.getName(), merchant.getApplicationId()));
+        log.debug("[Merchant] deleteMerchant committed merchantId={}", merchantId);
     }
 
     /**
@@ -54,10 +67,13 @@ public class MerchantService {
      */
     @Transactional
     public void suspendMerchant(String merchantId) {
+        log.debug("[Merchant] suspendMerchant start merchantId={}", merchantId);
         Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_NOT_FOUND, merchantId));
         merchant.suspend();
         merchantRepository.save(merchant);
+        applicationEventPublisher.publishEvent(MerchantSuspendedEvent.from(merchantId, merchant.getName()));
+        log.debug("[Merchant] suspendMerchant committed merchantId={}", merchantId);
     }
 
     /**
@@ -65,10 +81,13 @@ public class MerchantService {
      */
     @Transactional
     public void activateMerchant(String merchantId) {
+        log.debug("[Merchant] activateMerchant start merchantId={}", merchantId);
         Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_NOT_FOUND, merchantId));
         merchant.activate();
         merchantRepository.save(merchant);
+        applicationEventPublisher.publishEvent(MerchantActivatedEvent.from(merchantId, merchant.getName()));
+        log.debug("[Merchant] activateMerchant committed merchantId={}", merchantId);
     }
 
     /**
@@ -77,6 +96,7 @@ public class MerchantService {
      */
     @Transactional
     public void withdrawMerchantFromSuspended(String merchantId) {
+        log.debug("[Merchant] withdrawMerchantFromSuspended start merchantId={}", merchantId);
         Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_NOT_FOUND, merchantId));
         merchant.withdrawFromSuspended();
@@ -85,5 +105,6 @@ public class MerchantService {
         merchantApplicationPort.markSubscriptionEnded(merchant.getApplicationId());
 
         applicationEventPublisher.publishEvent(MerchantDeletedEvent.from(merchantId, merchant.getName(), merchant.getApplicationId()));
+        log.debug("[Merchant] withdrawMerchantFromSuspended committed merchantId={}", merchantId);
     }
 }

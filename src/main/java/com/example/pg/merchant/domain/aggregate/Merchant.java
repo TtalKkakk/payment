@@ -3,6 +3,9 @@ package com.example.pg.merchant.domain.aggregate;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.merchant.domain.enumerate.MerchantStatus;
+import com.example.pg.merchant.domain.vo.ApiKey;
+import com.example.pg.merchant.domain.vo.ApiSecret;
+import com.example.pg.merchant.domain.vo.MerchantName;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -52,12 +55,12 @@ public class Merchant {
         this.status = status;
     }
 
-    /** 신청 승인으로 생성 시 사용. 재승인 시에는 사용하지 않고 기존 row를 reactivate 한다 */
-    public static Merchant create(String name, String applicationId) {
+    /** 신청 승인으로 생성 시 사용. name은 반드시 MerchantApplication의 이름(MerchantName)으로 전달하여 설계상 일치를 보장한다. */
+    public static Merchant create(MerchantName name, String applicationId) {
         String id = UUID.randomUUID().toString();
-        String apiKey = "pk_merchant_" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
-        String apiSecret = "sk_merchant_" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
-        return new Merchant(id, apiKey, apiSecret, name, applicationId, MerchantStatus.ACTIVE);
+        ApiKey apiKey = ApiKey.ofRandom();
+        ApiSecret apiSecret = ApiSecret.ofRandom();
+        return new Merchant(id, apiKey.value(), apiSecret.value(), name.value(), applicationId, MerchantStatus.ACTIVE);
     }
 
     public void suspend() {
@@ -95,22 +98,24 @@ public class Merchant {
     }
 
     public void regenerateSecret() {
-        this.apiSecret = "sk_merchant_" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
+        this.apiSecret = ApiSecret.ofRandom().value();
     }
 
     /**
-     * 탈퇴(WITHDRAWN) 후 재승인 시 호출. ACTIVE로 되돌리고 apiKey·apiSecret을 새로 발급해 기존 키를 무효화한다.
+     * 탈퇴(WITHDRAWN) 후 재승인 시 호출. ACTIVE로 되돌리고, name을 신청서와 동기화하며 apiKey·apiSecret을 새로 발급한다.
+     * @param name 재승인된 MerchantApplication의 이름(MerchantName). Merchant.name = MerchantApplication.name 을 보장한다.
      */
-    public void reactivate() {
+    public void reactivate(MerchantName name) {
         if (this.status != MerchantStatus.WITHDRAWN) {
             throw new BusinessException(ErrorCode.MERCHANT_CANNOT_REACTIVATE, this.status.name());
         }
+        this.name = name.value();
         this.status = MerchantStatus.ACTIVE;
-        this.apiKey = "pk_merchant_" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
-        this.apiSecret = "sk_merchant_" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
+        this.apiKey = ApiKey.ofRandom().value();
+        this.apiSecret = ApiSecret.ofRandom().value();
     }
 
     public boolean matchesSecret(String secret) {
-        return this.apiSecret.equals(secret);
+        return this.apiSecret != null && this.apiSecret.equals(secret);
     }
 }

@@ -1,8 +1,9 @@
 package com.example.pg.merchant.command.application;
 
+import com.example.pg.merchant.domain.event.MerchantActivatedEvent;
 import com.example.pg.merchant.domain.event.MerchantDeletedEvent;
-import com.example.pg.merchant.domain.event.MerchantRegisteredEvent;
 import com.example.pg.merchant.domain.event.MerchantSecretRegeneratedEvent;
+import com.example.pg.merchant.domain.event.MerchantSuspendedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -14,23 +15,29 @@ import org.springframework.transaction.event.TransactionPhase;
  */
 @Slf4j
 @Component
-public class MerchantDomainEventListener {
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onMerchantRegistered(MerchantRegisteredEvent event) {
-        log.info("[DomainEvent] MerchantRegistered merchantId={}, name={}, occurredAt={}",
-                event.merchantId(), event.name(), event.occurredAt());
-    }
+public class MerchantEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMerchantSecretRegenerated(MerchantSecretRegeneratedEvent event) {
-        log.info("[DomainEvent] MerchantSecretRegenerated merchantId={}, occurredAt={}",
+        log.info("[Merchant] event=SecretRegenerated merchantId={} occurredAt={}",
                 event.merchantId(), event.occurredAt());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMerchantDeleted(MerchantDeletedEvent event) {
-        log.info("[DomainEvent] MerchantDeleted merchantId={}, name={}, occurredAt={}",
+        log.info("[Merchant] event=Deleted merchantId={} name={} applicationId={} occurredAt={}",
+                event.merchantId(), event.name(), event.applicationId(), event.occurredAt());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onMerchantSuspended(MerchantSuspendedEvent event) {
+        log.info("[Merchant] event=Suspended merchantId={} name={} occurredAt={}",
+                event.merchantId(), event.name(), event.occurredAt());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onMerchantActivated(MerchantActivatedEvent event) {
+        log.info("[Merchant] event=Activated merchantId={} name={} occurredAt={}",
                 event.merchantId(), event.name(), event.occurredAt());
     }
 }

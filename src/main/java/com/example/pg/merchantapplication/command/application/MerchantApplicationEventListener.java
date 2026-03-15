@@ -18,7 +18,7 @@ public class MerchantApplicationEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMerchantApplicationPended(MerchantApplicationPendedEvent event) {
-        log.info("[MerchantApplication] event=Submitted applicationId={} name={} businessNumber={} occurredAt={}",
+        log.info("[MerchantApplication] event=Pended applicationId={} name={} businessNumber={} occurredAt={}",
                 event.applicationId(), event.name(), event.businessNumber(), event.occurredAt());
     }
 
@@ -26,6 +26,8 @@ public class MerchantApplicationEventListener {
     public void onMerchantApplicationApproved(MerchantApplicationApprovedEvent event) {
         log.info("[MerchantApplication] event=Approved applicationId={} name={} occurredAt={}",
                 event.applicationId(), event.name(), event.occurredAt());
+        log.info("[Merchant] event=Created and acted merchantId={}, name={}, occurredAt={}",
+                event.merchantId(), event.name(), event.occurredAt());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

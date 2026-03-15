@@ -2,11 +2,12 @@ package com.example.pg.merchant.query.application;
 
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
-import com.example.pg.merchant.command.application.port.MerchantPort;
+import com.example.pg.merchant.presentation.port.MerchantPort;
 import com.example.pg.merchant.domain.aggregate.Merchant;
 import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
-import com.example.pg.merchant.query.application.dto.PagedMerchantsResult;
+import com.example.pg.merchant.query.application.dto.PagedMerchantsResultDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,7 @@ import java.util.Optional;
 /**
  * CQRS Query: 가맹점 조회·인증 (상태 변경 없음)
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MerchantQueryService {
@@ -38,6 +40,7 @@ public class MerchantQueryService {
         if (apiKey == null || apiKey.isBlank() || apiSecret == null || apiSecret.isBlank()) {
             return Optional.empty();
         }
+        log.debug("[Merchant] Query authenticate");
         return merchantRepository.findByApiKey(apiKey)
                 .filter(merchant -> merchant.matchesSecret(apiSecret))
                 .filter(Merchant::isActive)
@@ -49,6 +52,7 @@ public class MerchantQueryService {
      */
     @Transactional(readOnly = true)
     public Merchant findById(String merchantId) {
+        log.debug("[Merchant] Query findById merchantId={}", merchantId);
         return merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_NOT_FOUND, merchantId));
     }
@@ -58,7 +62,8 @@ public class MerchantQueryService {
      * id: Merchant ID 부분 검색 (null/blank면 전체), id 기준 내림차순.
      */
     @Transactional(readOnly = true)
-    public PagedMerchantsResult findPaged(String id, int pageNumber) {
+    public PagedMerchantsResultDto findPaged(String id, int pageNumber) {
+        log.debug("[Merchant] Query findPaged id={} page={}", id, pageNumber);
         if (pageNumber < 0) {
             pageNumber = 0;
         }
@@ -66,11 +71,12 @@ public class MerchantQueryService {
         Page<Merchant> page = (id != null && !id.isBlank())
                 ? merchantRepository.findByIdContaining(id.trim(), pageable)
                 : merchantRepository.findAll(pageable);
-        return PagedMerchantsResult.of(page, PAGE_BLOCK_SIZE);
+        return PagedMerchantsResultDto.of(page, PAGE_BLOCK_SIZE);
     }
 
     @Transactional(readOnly = true)
     public Merchant findKeyAndSecretResponse(String businessNumber, String password){
+        log.debug("[Merchant] Query findKeyAndSecretResponse businessNumber={}", businessNumber);
         String applicationId = merchantPort
                 .findApprovedApplicationIdByBusinessNumberAndPassword(businessNumber, password);
 

@@ -1,12 +1,13 @@
 package com.example.pg.merchantapplication.command.application;
 
-import com.example.pg.merchantapplication.command.application.port.MerchantApplicationPort;
+import com.example.pg.merchant.domain.aggregate.Merchant;
+import com.example.pg.merchant.domain.vo.MerchantName;
+import com.example.pg.merchantapplication.presentation.port.MerchantApplicationPort;
 import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
 import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
 import com.example.pg.merchantapplication.domain.event.MerchantApplicationApprovedEvent;
 import com.example.pg.merchantapplication.domain.event.MerchantApplicationRejectedEvent;
 import com.example.pg.merchantapplication.domain.event.MerchantApplicationPendedEvent;
-import com.example.pg.merchantapplication.domain.vo.ApplicationName;
 import com.example.pg.merchantapplication.domain.vo.BusinessNumber;
 import com.example.pg.merchantapplication.domain.vo.ContactEmail;
 import com.example.pg.merchantapplication.domain.vo.ContactPhone;
@@ -31,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -108,7 +110,7 @@ class MerchantApplicationServiceTest {
         @DisplayName("CANCELLED인 동일 사업자번호가 있으면 reapply 후 save, 이벤트 발행")
         void reapplyFromCancelled() {
             MerchantApplication existing = MerchantApplication.create(
-                    ApplicationName.of("구이름"),
+                    MerchantName.of("구이름"),
                     BusinessNumber.of(BUSINESS_NUMBER),
                     ContactPhone.of("010-1111-2222"),
                     ContactEmail.of("old@example.com"),
@@ -135,7 +137,7 @@ class MerchantApplicationServiceTest {
         @DisplayName("SUBSCRIPTION_ENDED인 동일 사업자번호가 있으면 reapply 후 save")
         void reapplyFromSubscriptionEnded() {
             MerchantApplication existing = MerchantApplication.create(
-                    ApplicationName.of("구이름"),
+                    MerchantName.of("구이름"),
                     BusinessNumber.of(BUSINESS_NUMBER),
                     ContactPhone.of(PHONE),
                     ContactEmail.of(EMAIL),
@@ -159,7 +161,7 @@ class MerchantApplicationServiceTest {
         @DisplayName("REJECTED인 동일 사업자번호가 있으면 reapply 후 save")
         void reapplyFromRejected() {
             MerchantApplication existing = MerchantApplication.create(
-                    ApplicationName.of("구이름"),
+                    MerchantName.of("구이름"),
                     BusinessNumber.of(BUSINESS_NUMBER),
                     ContactPhone.of(PHONE),
                     ContactEmail.of(EMAIL),
@@ -187,12 +189,13 @@ class MerchantApplicationServiceTest {
         void success() {
             MerchantApplication app = createWithId(APPLICATION_ID);
             when(merchantApplicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.of(app));
+            when(merchantApplicationPort.createFromApprovedApplication(APPLICATION_ID, MerchantName.of(NAME))).thenReturn(mock(Merchant.class));
 
             merchantApplicationService.approve(APPLICATION_ID);
 
             verify(merchantApplicationRepository).save(app);
             assertThat(app.getStatus()).isEqualTo(MerchantApplicationStatus.APPROVED);
-            verify(merchantApplicationPort).createFromApprovedApplication(APPLICATION_ID, NAME);
+            verify(merchantApplicationPort).createFromApprovedApplication(APPLICATION_ID, MerchantName.of(NAME));
             verify(applicationEventPublisher).publishEvent(any(MerchantApplicationApprovedEvent.class));
         }
 
@@ -273,7 +276,7 @@ class MerchantApplicationServiceTest {
         @DisplayName("비밀번호 일치·PENDING이면 cancel 후 save")
         void success() {
             MerchantApplication app = MerchantApplication.create(
-                    ApplicationName.of(NAME),
+                    MerchantName.of(NAME),
                     BusinessNumber.of(BUSINESS_NUMBER),
                     ContactPhone.of(PHONE),
                     ContactEmail.of(EMAIL),
@@ -303,7 +306,7 @@ class MerchantApplicationServiceTest {
         @DisplayName("이미 승인/거절된 신청이면 APPLICATION_ALREADY_PROCESSED")
         void alreadyProcessed() {
             MerchantApplication app = MerchantApplication.create(
-                    ApplicationName.of(NAME),
+                    MerchantName.of(NAME),
                     BusinessNumber.of(BUSINESS_NUMBER),
                     ContactPhone.of(PHONE),
                     ContactEmail.of(EMAIL),
@@ -323,7 +326,7 @@ class MerchantApplicationServiceTest {
         @DisplayName("비밀번호 불일치 시 APPLICATION_PASSWORD_MISMATCH")
         void passwordMismatch() {
             MerchantApplication app = MerchantApplication.create(
-                    ApplicationName.of(NAME),
+                    MerchantName.of(NAME),
                     BusinessNumber.of(BUSINESS_NUMBER),
                     ContactPhone.of(PHONE),
                     ContactEmail.of(EMAIL),

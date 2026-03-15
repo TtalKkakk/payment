@@ -2,7 +2,7 @@ package com.example.pg.merchantapplication.query.application;
 
 import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
 import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
-import com.example.pg.merchantapplication.domain.vo.ApplicationName;
+import com.example.pg.merchant.domain.vo.MerchantName;
 import com.example.pg.merchantapplication.domain.vo.BusinessNumber;
 import com.example.pg.merchantapplication.domain.vo.ContactEmail;
 import com.example.pg.merchantapplication.domain.vo.ContactPhone;
@@ -55,7 +55,7 @@ class MerchantApplicationQueryServiceTest {
 
     private static MerchantApplication createApproved() {
         MerchantApplication app = MerchantApplication.create(
-                ApplicationName.of(NAME),
+                MerchantName.of(NAME),
                 BusinessNumber.of(BUSINESS_NUMBER),
                 ContactPhone.of(PHONE),
                 ContactEmail.of(EMAIL),
@@ -67,7 +67,7 @@ class MerchantApplicationQueryServiceTest {
 
     private static MerchantApplication createPending() {
         return MerchantApplication.create(
-                ApplicationName.of(NAME),
+                MerchantName.of(NAME),
                 BusinessNumber.of(BUSINESS_NUMBER),
                 ContactPhone.of(PHONE),
                 ContactEmail.of(EMAIL),

@@ -3,6 +3,7 @@ package com.example.pg.merchant.domain.aggregate;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.merchant.domain.enumerate.MerchantStatus;
+import com.example.pg.merchant.domain.vo.MerchantName;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,7 @@ class MerchantTest {
         @Test
         @DisplayName("이름과 applicationId로 생성 시 ACTIVE, apiKey/apiSecret 자동 생성")
         void success() {
-            Merchant merchant = Merchant.create(NAME, APPLICATION_ID);
+            Merchant merchant = Merchant.create(MerchantName.of(NAME), APPLICATION_ID);
 
             assertThat(merchant.getId()).isNotBlank();
             assertThat(merchant.getName()).isEqualTo(NAME);
@@ -178,15 +179,17 @@ class MerchantTest {
     class Reactivate {
 
         @Test
-        @DisplayName("WITHDRAWN이면 ACTIVE로 전이하고 apiKey·apiSecret 재발급")
+        @DisplayName("WITHDRAWN이면 ACTIVE로 전이하고 name 동기화, apiKey·apiSecret 재발급")
         void success() {
             Merchant merchant = withdrawnMerchant();
             String oldKey = merchant.getApiKey();
             String oldSecret = merchant.getApiSecret();
+            String newName = "재승인가맹점";
 
-            merchant.reactivate();
+            merchant.reactivate(MerchantName.of(newName));
 
             assertThat(merchant.getStatus()).isEqualTo(MerchantStatus.ACTIVE);
+            assertThat(merchant.getName()).isEqualTo(newName);
             assertThat(merchant.getApiKey()).isNotEqualTo(oldKey);
             assertThat(merchant.getApiSecret()).isNotEqualTo(oldSecret);
             assertThat(merchant.getApiKey()).startsWith("pk_merchant_");
@@ -197,7 +200,7 @@ class MerchantTest {
         @DisplayName("ACTIVE면 MERCHANT_CANNOT_REACTIVATE")
         void whenActive() {
             Merchant merchant = activeMerchant();
-            assertThatThrownBy(merchant::reactivate)
+            assertThatThrownBy(() -> merchant.reactivate(MerchantName.of(NAME)))
                     .isInstanceOf(BusinessException.class)
                     .matches(e -> ((BusinessException) e).getErrorCode() == ErrorCode.MERCHANT_CANNOT_REACTIVATE);
         }
@@ -206,7 +209,7 @@ class MerchantTest {
         @DisplayName("SUSPENDED면 MERCHANT_CANNOT_REACTIVATE")
         void whenSuspended() {
             Merchant merchant = suspendedMerchant();
-            assertThatThrownBy(merchant::reactivate)
+            assertThatThrownBy(() -> merchant.reactivate(MerchantName.of(NAME)))
                     .isInstanceOf(BusinessException.class)
                     .matches(e -> ((BusinessException) e).getErrorCode() == ErrorCode.MERCHANT_CANNOT_REACTIVATE);
         }

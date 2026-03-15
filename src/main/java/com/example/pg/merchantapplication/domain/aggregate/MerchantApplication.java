@@ -2,8 +2,8 @@ package com.example.pg.merchantapplication.domain.aggregate;
 
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
+import com.example.pg.merchant.domain.vo.MerchantName;
 import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
-import com.example.pg.merchantapplication.domain.vo.ApplicationName;
 import com.example.pg.merchantapplication.domain.vo.BusinessNumber;
 import com.example.pg.merchantapplication.domain.vo.ContactEmail;
 import com.example.pg.merchantapplication.domain.vo.ContactPhone;
@@ -104,11 +104,10 @@ public class MerchantApplication {
 
     /**
      * 신청 애그리거트를 생성한다.
-     * id는 넣지 않아 Spring Data JPA save() 시 persist()가 호출되도록 한다. 실제 id는 @PrePersist에서 부여.
-     * 검증은 Value Object(ApplicationName, BusinessNumber 등)에서 수행되므로, 여기서는 VO 값을 넣기만 한다.
+     * name은 MerchantName을 사용하여 Merchant 도메인과 설계상 동일한 타입으로 일치시킨다.
      */
     public static MerchantApplication create(
-            ApplicationName name,
+            MerchantName name,
             BusinessNumber businessNumber,
             ContactPhone contactPhone,
             ContactEmail contactEmail,
@@ -190,7 +189,7 @@ public class MerchantApplication {
      * 기존 id·business_number·created_at 유지, 나머지 갱신 후 PENDING으로 전이.
      */
     public void reapply(
-            ApplicationName name,
+            MerchantName name,
             ContactPhone contactPhone,
             ContactEmail contactEmail,
             PasswordHash passwordHash
@@ -208,5 +207,13 @@ public class MerchantApplication {
         this.rejectReason = null;
         this.processedAt = null;
         this.updatedAt = LocalDateTime.now();
+    }
+
+    /** 승인 시 Merchant 생성에 전달할 이름. Merchant.name = MerchantApplication.name 을 설계상 보장하기 위해 동일 타입(MerchantName)을 반환한다. */
+    public MerchantName getMerchantName() {
+        if (this.name == null || this.name.isBlank()) {
+            throw new IllegalStateException("merchant application name must be set");
+        }
+        return MerchantName.of(this.name);
     }
 }

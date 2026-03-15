@@ -7,10 +7,11 @@ import java.time.LocalDateTime;
  */
 public record MerchantApplicationApprovedEvent(
         String applicationId,
+        String merchantId,
         String name,
         LocalDateTime occurredAt
 ) {
-    public static MerchantApplicationApprovedEvent from(String applicationId, String name) {
-        return new MerchantApplicationApprovedEvent(applicationId, name, LocalDateTime.now());
+    public static MerchantApplicationApprovedEvent from(String applicationId, String name, String merchantId) {
+        return new MerchantApplicationApprovedEvent(applicationId, name, merchantId, LocalDateTime.now());
     }
 }
