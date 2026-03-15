@@ -2,8 +2,8 @@ package com.example.pg.receipt.command.application;
 
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.merchant.presentation.port.MerchantPort;
-import com.example.pg.payment.command.application.port.PaymentPort;
-import com.example.pg.payment.command.application.port.dto.PaymentSnapshotForReceiptDto;
+import com.example.pg.payment.presentation.port.PaymentPort;
+import com.example.pg.payment.presentation.port.dto.PaymentSnapshotForReceiptDto;
 import com.example.pg.receipt.domain.aggregate.Receipt;
 import com.example.pg.receipt.domain.vo.ReceiptId;
 import com.example.pg.receipt.infrastructure.persistence.ReceiptRepository;

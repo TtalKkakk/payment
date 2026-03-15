@@ -1,6 +1,6 @@
 package com.example.pg.payment.command.application;
 
-import com.example.pg.payment.command.application.port.CardCompanyPort;
+import com.example.pg.payment.presentation.port.CardCompanyPort;
 import com.example.pg.payment.domain.aggregate.CardCompany;
 import com.example.pg.payment.domain.enumerate.CardCompanyStatus;
 import com.example.pg.payment.infrastructure.persistence.CardCompanyRepository;

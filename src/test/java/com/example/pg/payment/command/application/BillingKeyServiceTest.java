@@ -1,8 +1,8 @@
 package com.example.pg.payment.command.application;
 
-import com.example.pg.payment.command.application.port.CardCompanyPort;
-import com.example.pg.payment.command.application.port.dto.BillingKeyTokenDto;
-import com.example.pg.payment.command.application.port.dto.RegistrationSessionDto;
+import com.example.pg.payment.presentation.port.CardCompanyPort;
+import com.example.pg.payment.presentation.port.dto.BillingKeyTokenDto;
+import com.example.pg.payment.presentation.port.dto.RegistrationSessionDto;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;

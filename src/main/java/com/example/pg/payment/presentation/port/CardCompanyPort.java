@@ -1,10 +1,8 @@
-package com.example.pg.payment.command.application.port;
+package com.example.pg.payment.presentation.port;
 
-import com.example.pg.payment.command.application.port.dto.BillingKeyTokenDto;
-import com.example.pg.payment.command.application.port.dto.PaymentApproveDto;
-import com.example.pg.payment.command.application.port.dto.RegistrationSessionDto;
-
-import java.time.LocalDateTime;
+import com.example.pg.payment.presentation.port.dto.BillingKeyTokenDto;
+import com.example.pg.payment.presentation.port.dto.PaymentApproveDto;
+import com.example.pg.payment.presentation.port.dto.RegistrationSessionDto;
 
 /**
  * 카드사 결제 승인 API 포트.

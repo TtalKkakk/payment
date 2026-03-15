@@ -1,7 +1,7 @@
 package com.example.pg.payment.command.application;
 
 import com.example.pg.merchant.domain.aggregate.Merchant;
-import com.example.pg.payment.command.application.result.PaymentWebhookPayload;
+import com.example.pg.payment.command.application.dto.PaymentWebhookDto;
 import com.example.pg.payment.domain.aggregate.Payment;
 import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +51,7 @@ public class PaymentWebhookService {
             log.warn("가맹점을 찾을 수 없어 웹훅 서명 생략 merchantId={}", payment.getMerchantId());
         }
 
-        PaymentWebhookPayload payload = PaymentWebhookPayload.from(payment);
+        PaymentWebhookDto payload = PaymentWebhookDto.from(payment);
         String payloadJson;
         try {
             payloadJson = objectMapper.writeValueAsString(payload);

@@ -11,7 +11,7 @@ public record MerchantApplicationApprovedEvent(
         String name,
         LocalDateTime occurredAt
 ) {
-    public static MerchantApplicationApprovedEvent from(String applicationId, String name, String merchantId) {
-        return new MerchantApplicationApprovedEvent(applicationId, name, merchantId, LocalDateTime.now());
+    public static MerchantApplicationApprovedEvent from(String applicationId, String merchantId, String name) {
+        return new MerchantApplicationApprovedEvent(applicationId, merchantId, name, LocalDateTime.now());
     }
 }

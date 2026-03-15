@@ -1,7 +1,7 @@
-package com.example.pg.payment.infrastructure.adapter;
+package com.example.pg.payment.command.application.adapter;
 
-import com.example.pg.payment.command.application.port.PaymentPort;
-import com.example.pg.payment.command.application.port.dto.PaymentSnapshotForReceiptDto;
+import com.example.pg.payment.presentation.port.PaymentPort;
+import com.example.pg.payment.presentation.port.dto.PaymentSnapshotForReceiptDto;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,7 @@ import java.util.Optional;
  */
 @Component
 @RequiredArgsConstructor
-public class PaymentForReceiptAdapter implements PaymentPort {
+public class PaymentAdapter implements PaymentPort {
 
     private final PaymentRepository paymentRepository;
 

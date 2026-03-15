@@ -1,15 +1,15 @@
-package com.example.pg.payment.presentation.adapter;
+package com.example.pg.payment.command.application.adapter;
 
-import com.example.pg.payment.command.application.port.dto.PaymentApproveDto;
+import com.example.pg.payment.presentation.port.dto.PaymentApproveDto;
 import com.example.pg.payment.presentation.dto.BillingKeyRequest;
 import com.example.pg.payment.presentation.dto.BillingKeyResponse;
 import com.example.pg.payment.presentation.dto.SessionRequest;
 import com.example.pg.payment.presentation.dto.SessionResponse;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
-import com.example.pg.payment.command.application.port.CardCompanyPort;
-import com.example.pg.payment.command.application.port.dto.BillingKeyTokenDto;
-import com.example.pg.payment.command.application.port.dto.RegistrationSessionDto;
+import com.example.pg.payment.presentation.port.CardCompanyPort;
+import com.example.pg.payment.presentation.port.dto.BillingKeyTokenDto;
+import com.example.pg.payment.presentation.port.dto.RegistrationSessionDto;
 import com.example.pg.payment.presentation.dto.CardCompanyApproveRequest;
 import com.example.pg.payment.presentation.dto.CardCompanyApproveResponse;
 import com.example.pg.payment.presentation.dto.CardCompanyErrorResponse;

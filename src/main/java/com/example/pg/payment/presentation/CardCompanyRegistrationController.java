@@ -1,7 +1,7 @@
 package com.example.pg.payment.presentation;
 
 import com.example.pg.payment.command.application.BillingKeyService;
-import com.example.pg.payment.command.application.port.dto.RegistrationSessionDto;
+import com.example.pg.payment.presentation.port.dto.RegistrationSessionDto;
 import com.example.pg.payment.infrastructure.persistence.CardRegisterSessionStore;
 import com.example.pg.payment.query.application.BillingKeyQueryService;
 import com.example.pg.payment.query.application.dto.CardCompanyListItemDto;

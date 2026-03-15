@@ -1,7 +1,7 @@
 package com.example.pg.payment.command.application;
 
-import com.example.pg.payment.command.application.port.CardCompanyPort;
-import com.example.pg.payment.command.application.port.dto.PaymentApproveDto;
+import com.example.pg.payment.presentation.port.CardCompanyPort;
+import com.example.pg.payment.presentation.port.dto.PaymentApproveDto;
 import com.example.pg.payment.domain.aggregate.CardCompany;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
