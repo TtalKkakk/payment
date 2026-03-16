@@ -28,8 +28,9 @@ public class ReceiptOnPaymentApprovedListener {
         if (event.status() != PaymentStatus.AUTHORIZED) {
             return;
         }
-        log.info("[Receipt] 결제 승인 완료 → 영수증 발급 시도 paymentId={}", event.paymentId());
+        log.info("[Receipt] event=IssueRequested paymentId={} status={} occurredAt={}",
+                event.paymentId(), event.status(), event.occurredAt());
         receiptService.issueForPayment(event.paymentId());
-        log.info("[Receipt] 영수증 발급 완료 paymentId={}", event.paymentId());
+        log.info("[Receipt] event=IssuedFromPayment paymentId={}", event.paymentId());
     }
 }

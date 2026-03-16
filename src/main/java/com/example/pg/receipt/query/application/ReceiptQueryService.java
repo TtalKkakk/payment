@@ -3,6 +3,7 @@ package com.example.pg.receipt.query.application;
 import com.example.pg.receipt.domain.aggregate.Receipt;
 import com.example.pg.receipt.infrastructure.persistence.ReceiptRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +12,7 @@ import java.util.Optional;
 /**
  * 영수증 조회 전용 서비스 (상태 변경 없음).
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReceiptQueryService {
@@ -26,6 +28,7 @@ public class ReceiptQueryService {
      */
     @Transactional(readOnly = true)
     public Optional<Receipt> getByPaymentId(String paymentId) {
+        log.debug("[Receipt] Query getByPaymentId paymentId={}", paymentId);
         return receiptRepository.findByPaymentId(paymentId);
     }
 }

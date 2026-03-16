@@ -9,6 +9,7 @@ import com.example.pg.receipt.domain.aggregate.Receipt;
 import com.example.pg.receipt.domain.vo.ReceiptId;
 import com.example.pg.receipt.infrastructure.persistence.ReceiptRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -18,6 +19,7 @@ import java.util.Optional;
  * 결제 승인 완료(AUTHORIZED)인 결제에 대해 영수증을 생성한다.
  * 이미 해당 결제로 영수증이 있으면 기존 영수증을 반환한다(멱등).
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReceiptService {
@@ -30,6 +32,7 @@ public class ReceiptService {
      * 결제 ID에 대해 영수증 발급. 승인 완료된 결제만 가능하며, 이미 있으면 기존 영수증 반환(멱등).
      */
     public Receipt issueForPayment(String paymentId) {
+        log.debug("[Receipt] issueForPayment start paymentId={}", paymentId);
         if (!paymentPort.existsPayment(paymentId)) {
             throw new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentId);
         }
@@ -40,6 +43,7 @@ public class ReceiptService {
 
         Optional<Receipt> existing = receiptRepository.findByPaymentId(paymentId);
         if (existing.isPresent()) {
+            log.debug("[Receipt] issueForPayment idempotent-return paymentId={}", paymentId);
             return existing.get();
         }
 
@@ -58,6 +62,8 @@ public class ReceiptService {
                 s.transactionId(),
                 s.approvedAt()
         );
-        return receiptRepository.save(receipt);
+        Receipt saved = receiptRepository.save(receipt);
+        log.info("[Receipt] event=Issued paymentId={} receiptId={}", paymentId, saved.getId());
+        return saved;
     }
 }
