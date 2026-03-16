@@ -40,6 +40,7 @@ public enum ErrorCode {
     // ----- 공통 / 기타 도메인 -----
     CONCURRENT_MODIFICATION(HttpStatus.CONFLICT, "E023", "다른 사용자가 먼저 처리했습니다. 새로고침 후 다시 시도해 주세요."),
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "E002", "결제를 찾을 수 없습니다. (paymentId=%s)"),
+    PAYMENT_ID_INVALID(HttpStatus.BAD_REQUEST, "E036", "결제 ID가 올바르지 않습니다."),
     PAYMENT_INVALID_STATUS(HttpStatus.CONFLICT, "E020", "결제 상태 오류. (%s)"),
     PAYMENT_AMOUNT_INVALID(HttpStatus.BAD_REQUEST, "E016", "결제 금액은 0보다 커야 합니다. (amount=%s)"),
     BILLING_KEY_REQUIRED(HttpStatus.BAD_REQUEST, "E017", "결제 승인을 위해 빌링키가 필요합니다."),

@@ -1,6 +1,11 @@
 package com.example.pg.payment.command.application;
 
-import com.example.pg.payment.presentation.port.CardCompanyPort;
+import com.example.pg.merchant.domain.aggregate.Merchant;
+import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
+import com.example.pg.payment.command.application.dto.PaymentWebhookDto;
+import com.example.pg.payment.domain.repository.CardCompanyPortRegistry;
+import com.example.pg.payment.presentation.CardCompanyConnect;
+import com.example.pg.payment.presentation.FranchiseConnect;
 import com.example.pg.payment.domain.aggregate.Payment;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.AuthorizationStartedEvent;
@@ -11,19 +16,32 @@ import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.payment.infrastructure.persistence.CardCompanyRepository;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
+    private static final String HMAC_SHA256 = "HmacSHA256";
+
     private final PaymentRepository paymentRepository;
     private final CardCompanyRepository cardCompanyRepository;
     private final CardCompanyPortRegistry portRegistry;
     private final ApplicationEventPublisher eventPublisher;
+    private final MerchantRepository merchantRepository;
+    private final ObjectMapper objectMapper;
+    private final FranchiseConnect franchiseConnect;
 
     /**
      * 트랜잭션 1: 결제 객체 생성 → 상태 READY.
@@ -35,6 +53,7 @@ public class PaymentService {
                                   String merchantOrderId, String orderName,
                                   String customerEmail, String customerName, String callbackUrl,
                                   String cardCompanyCode) {
+        log.debug("[Payment] createPayment start merchantId={} amount={} cardCompanyCode={}", merchantId, amount, cardCompanyCode);
         validateAmount(amount);
         PaymentId paymentId = PaymentId.generate();
         var cardCompany = (cardCompanyCode != null && !cardCompanyCode.isBlank())
@@ -50,6 +69,7 @@ public class PaymentService {
         eventPublisher.publishEvent(PaymentCreatedEvent.from(
                 payment.getId(), payment.getMerchantId(), payment.getAmount()));
 
+        log.debug("[Payment] createPayment committed paymentId={} merchantId={}", paymentId.getValue(), merchantId);
         return paymentId;
     }
 
@@ -59,6 +79,7 @@ public class PaymentService {
      */
     @Transactional
     public void startAuthorization(String paymentIdValue, String billingKey) {
+        log.debug("[Payment] startAuthorization start paymentId={}", paymentIdValue);
         if (billingKey == null || billingKey.isBlank()) {
             throw new BusinessException(ErrorCode.BILLING_KEY_REQUIRED);
         }
@@ -70,6 +91,7 @@ public class PaymentService {
 
         // 트랜잭션 커밋 후 비동기 승인 처리 (커밋 전 호출 시 DB에 AUTHORIZING이 반영되기 전에 조회되어 상태가 바뀌지 않는 문제 방지)
         eventPublisher.publishEvent(AuthorizationStartedEvent.from(paymentIdValue, billingKey));
+        log.debug("[Payment] startAuthorization committed paymentId={}", paymentIdValue);
     }
 
     /** Tx2(승인 시작) 실패 시 보상: READY 결제를 ABORTED로 무효화. 별도 트랜잭션으로 실행 */
@@ -118,6 +140,7 @@ public class PaymentService {
      */
     @Transactional
     public void cancelPayment(String merchantId, String paymentIdValue) {
+        log.debug("[Payment] cancelPayment start merchantId={} paymentId={}", merchantId, paymentIdValue);
         Payment payment = paymentRepository.load(PaymentId.from(paymentIdValue))
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentIdValue));
 
@@ -128,7 +151,7 @@ public class PaymentService {
         if (payment.getCardCompany() == null) {
             throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제에 카드사 정보가 없어 환불할 수 없습니다.");
         }
-        CardCompanyPort port = portRegistry.getPortOrThrow(payment.getCardCompany().getCode());
+        CardCompanyConnect port = portRegistry.getPortOrThrow(payment.getCardCompany().getCode());
         if (!port.requestRefund(payment.getId())) {
             throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "환불 요청 실패");
         }
@@ -136,6 +159,54 @@ public class PaymentService {
         payment.cancel();
 
         eventPublisher.publishEvent(PaymentStatusChangedEvent.from(payment.getId(), PaymentStatus.CANCELED));
+        log.debug("[Payment] cancelPayment committed paymentId={}", paymentIdValue);
+    }
+
+    /**
+     * 결제 상태 변경 결과를 가맹점 callbackUrl로 웹훅 발송.
+     * callbackUrl이 없으면 발송하지 않는다. 서명은 가맹점 apiSecret으로 생성한다.
+     */
+    public void sendWebhook(Payment payment) {
+        String callbackUrl = payment.getCallbackUrl();
+        if (callbackUrl == null || callbackUrl.isBlank()) {
+            log.debug("[Payment] webhook skip no callbackUrl paymentId={}", payment.getId());
+            return;
+        }
+
+        String apiSecret = merchantRepository.findById(payment.getMerchantId())
+                .map(Merchant::getApiSecret)
+                .orElse(null);
+        if (apiSecret == null) {
+            log.warn("[Payment] webhook merchant not found, signature omitted merchantId={}", payment.getMerchantId());
+        }
+
+        PaymentWebhookDto payload = PaymentWebhookDto.from(payment);
+        String payloadJson;
+        try {
+            payloadJson = objectMapper.writeValueAsString(payload);
+        } catch (Exception e) {
+            log.error("[Payment] webhook payload serialize failed paymentId={}", payment.getId(), e);
+            return;
+        }
+
+        String signature = null;
+        if (apiSecret != null) {
+            try {
+                signature = computeHmacSha256(payloadJson, apiSecret);
+            } catch (Exception e) {
+                log.warn("[Payment] webhook signature failed paymentId={}", payment.getId(), e);
+            }
+        }
+
+        franchiseConnect.send(callbackUrl, payloadJson, signature);
+        log.info("[Payment] webhook sent paymentId={} status={}", payment.getId(), payment.getStatus());
+    }
+
+    private static String computeHmacSha256(String data, String secret) throws Exception {
+        Mac mac = Mac.getInstance(HMAC_SHA256);
+        mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), HMAC_SHA256));
+        byte[] hash = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+        return Base64.getEncoder().encodeToString(hash);
     }
 
     private void validateAmount(long amount) {

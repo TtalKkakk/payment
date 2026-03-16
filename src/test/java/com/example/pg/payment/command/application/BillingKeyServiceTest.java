@@ -1,8 +1,9 @@
 package com.example.pg.payment.command.application;
 
-import com.example.pg.payment.presentation.port.CardCompanyPort;
-import com.example.pg.payment.presentation.port.dto.BillingKeyTokenDto;
-import com.example.pg.payment.presentation.port.dto.RegistrationSessionDto;
+import com.example.pg.payment.domain.repository.CardCompanyPortRegistry;
+import com.example.pg.payment.presentation.CardCompanyConnect;
+import com.example.pg.payment.presentation.dto.BillingKeyTokenResponse;
+import com.example.pg.payment.presentation.dto.RegistrationSessionResponse;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +30,7 @@ class BillingKeyServiceTest {
     @Mock
     private CardCompanyPortRegistry portRegistry;
     @Mock
-    private CardCompanyPort cardCompanyPort;
+    private CardCompanyConnect cardCompanyConnect;
 
     @InjectMocks
     private BillingKeyService billingKeyService;
@@ -41,15 +42,15 @@ class BillingKeyServiceTest {
         @Test
         @DisplayName("카드사 포트로 등록 세션 생성 위임")
         void success() {
-            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyPort);
-            RegistrationSessionDto dto = new RegistrationSessionDto("token-1", "/register");
-            when(cardCompanyPort.createRegistrationSession(RETURN_URL)).thenReturn(dto);
+            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyConnect);
+            RegistrationSessionResponse dto = new RegistrationSessionResponse("token-1", "/register");
+            when(cardCompanyConnect.createRegistrationSession(RETURN_URL)).thenReturn(dto);
 
-            RegistrationSessionDto result = billingKeyService.createRegistrationSession(CARD_COMPANY_CODE, RETURN_URL);
+            RegistrationSessionResponse result = billingKeyService.createRegistrationSession(CARD_COMPANY_CODE, RETURN_URL);
 
             assertThat(result.token()).isEqualTo("token-1");
             assertThat(result.registrationUrl()).isEqualTo("/register");
-            verify(cardCompanyPort).createRegistrationSession(RETURN_URL);
+            verify(cardCompanyConnect).createRegistrationSession(RETURN_URL);
         }
 
         @Test
@@ -71,14 +72,14 @@ class BillingKeyServiceTest {
         @Test
         @DisplayName("카드사 포트로 빌링키 발급 위임")
         void success() {
-            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyPort);
-            BillingKeyTokenDto dto = new BillingKeyTokenDto("bk-token-1");
-            when(cardCompanyPort.issueBillingKey(AUTH_CODE)).thenReturn(dto);
+            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyConnect);
+            BillingKeyTokenResponse dto = new BillingKeyTokenResponse("bk-token-1");
+            when(cardCompanyConnect.issueBillingKey(AUTH_CODE)).thenReturn(dto);
 
-            BillingKeyTokenDto result = billingKeyService.issueBillingKey(CARD_COMPANY_CODE, AUTH_CODE);
+            BillingKeyTokenResponse result = billingKeyService.issueBillingKey(CARD_COMPANY_CODE, AUTH_CODE);
 
             assertThat(result.billingKeyToken()).isEqualTo("bk-token-1");
-            verify(cardCompanyPort).issueBillingKey(AUTH_CODE);
+            verify(cardCompanyConnect).issueBillingKey(AUTH_CODE);
         }
     }
 }

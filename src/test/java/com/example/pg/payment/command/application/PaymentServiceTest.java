@@ -6,12 +6,17 @@ import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.AuthorizationStartedEvent;
 import com.example.pg.payment.domain.event.PaymentCreatedEvent;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
+import com.example.pg.payment.domain.repository.CardCompanyPortRegistry;
 import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.payment.infrastructure.persistence.CardCompanyRepository;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
-import com.example.pg.payment.presentation.port.CardCompanyPort;
+import com.example.pg.merchant.domain.aggregate.Merchant;
+import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
+import com.example.pg.payment.presentation.CardCompanyConnect;
+import com.example.pg.payment.presentation.FranchiseConnect;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -47,9 +52,15 @@ class PaymentServiceTest {
     @Mock
     private CardCompanyPortRegistry portRegistry;
     @Mock
-    private CardCompanyPort cardCompanyPort;
+    private CardCompanyConnect cardCompanyConnect;
     @Mock
     private ApplicationEventPublisher eventPublisher;
+    @Mock
+    private MerchantRepository merchantRepository;
+    @Mock
+    private ObjectMapper objectMapper;
+    @Mock
+    private FranchiseConnect franchiseConnect;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -269,8 +280,8 @@ class PaymentServiceTest {
             payment.startAuthorization();
             payment.authorizeSuccess("a", "t", java.time.LocalDateTime.now());
             when(paymentRepository.load(PaymentId.from(PAYMENT_ID))).thenReturn(Optional.of(payment));
-            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyPort);
-            when(cardCompanyPort.requestRefund(PAYMENT_ID)).thenReturn(false);
+            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyConnect);
+            when(cardCompanyConnect.requestRefund(PAYMENT_ID)).thenReturn(false);
 
             assertThatThrownBy(() -> paymentService.cancelPayment(MERCHANT_ID, PAYMENT_ID))
                     .isInstanceOf(BusinessException.class)
@@ -288,8 +299,8 @@ class PaymentServiceTest {
             payment.startAuthorization();
             payment.authorizeSuccess("a", "t", java.time.LocalDateTime.now());
             when(paymentRepository.load(PaymentId.from(PAYMENT_ID))).thenReturn(Optional.of(payment));
-            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyPort);
-            when(cardCompanyPort.requestRefund(PAYMENT_ID)).thenReturn(true);
+            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyConnect);
+            when(cardCompanyConnect.requestRefund(PAYMENT_ID)).thenReturn(true);
 
             paymentService.cancelPayment(MERCHANT_ID, PAYMENT_ID);
 
@@ -298,6 +309,60 @@ class PaymentServiceTest {
             verify(eventPublisher).publishEvent(eventCaptor.capture());
             assertThat(eventCaptor.getValue().paymentId()).isEqualTo(PAYMENT_ID);
             assertThat(eventCaptor.getValue().status()).isEqualTo(PaymentStatus.CANCELED);
+        }
+    }
+
+    @Nested
+    @DisplayName("sendWebhook")
+    class SendWebhook {
+
+        @Test
+        @DisplayName("callbackUrl이 null이면 발송 생략")
+        void noCallbackUrl() {
+            Payment payment = new Payment(
+                    PaymentId.from(PAYMENT_ID), MERCHANT_ID, 10_000L,
+                    "ord-1", "주문", "a@a.com", "홍길동", null
+            );
+            payment.startAuthorization();
+            payment.authorizeSuccess("a", "t", java.time.LocalDateTime.now());
+
+            paymentService.sendWebhook(payment);
+
+            verify(franchiseConnect, never()).send(anyString(), anyString(), any());
+        }
+
+        @Test
+        @DisplayName("callbackUrl이 blank면 발송 생략")
+        void blankCallbackUrl() {
+            Payment payment = new Payment(
+                    PaymentId.from(PAYMENT_ID), MERCHANT_ID, 10_000L,
+                    "ord-1", "주문", "a@a.com", "홍길동", "   "
+            );
+            payment.startAuthorization();
+            payment.authorizeFail();
+
+            paymentService.sendWebhook(payment);
+
+            verify(franchiseConnect, never()).send(anyString(), anyString(), any());
+        }
+
+        @Test
+        @DisplayName("callbackUrl 있으면 포트로 발송 요청")
+        void sendsViaPort() throws Exception {
+            Payment payment = new Payment(
+                    PaymentId.from(PAYMENT_ID), MERCHANT_ID, 10_000L,
+                    "ord-1", "주문", "a@a.com", "홍길동", "https://merchant.com/webhook"
+            );
+            payment.startAuthorization();
+            payment.authorizeSuccess("appr-1", "tx-1", java.time.LocalDateTime.now());
+            when(merchantRepository.findById(MERCHANT_ID)).thenReturn(Optional.of(
+                    new Merchant("m1", "pk", "sk_secret", "가맹점", "app-1", com.example.pg.merchant.domain.enumerate.MerchantStatus.ACTIVE)
+            ));
+            when(objectMapper.writeValueAsString(any())).thenReturn("{\"paymentId\":\"payment-1\"}");
+
+            paymentService.sendWebhook(payment);
+
+            verify(franchiseConnect).send(eq("https://merchant.com/webhook"), eq("{\"paymentId\":\"payment-1\"}"), anyString());
         }
     }
 }

@@ -1,14 +1,14 @@
-package com.example.pg.payment.presentation.port;
+package com.example.pg.payment.presentation;
 
-import com.example.pg.payment.presentation.port.dto.BillingKeyTokenDto;
-import com.example.pg.payment.presentation.port.dto.PaymentApproveDto;
-import com.example.pg.payment.presentation.port.dto.RegistrationSessionDto;
+import com.example.pg.payment.presentation.dto.BillingKeyTokenResponse;
+import com.example.pg.payment.presentation.dto.PaymentApproveResponse;
+import com.example.pg.payment.presentation.dto.RegistrationSessionResponse;
 
 /**
  * 카드사 결제 승인 API 포트.
  * 가이드: POST /api/pg/payments/approve (paymentId, amount, billingKeyToken) → success, approvalNumber, transactionId 등.
  */
-public interface CardCompanyPort {
+public interface CardCompanyConnect {
 
     /**
      * 카드사에 결제 승인 요청.
@@ -19,9 +19,9 @@ public interface CardCompanyPort {
      * @param billingKeyToken 빌링키 발급 시 카드사가 발급한 토큰
      * @return 승인 성공 시 approvalNumber·transactionId·approvedAt 포함, 실패 시 resultCode·message
      */
-    PaymentApproveDto approve(String paymentId, long amount, String billingKeyToken);
-    RegistrationSessionDto createRegistrationSession(String returnUrl);
-    BillingKeyTokenDto issueBillingKey(String authCode);
+    PaymentApproveResponse approve(String paymentId, long amount, String billingKeyToken);
+    RegistrationSessionResponse createRegistrationSession(String returnUrl);
+    BillingKeyTokenResponse issueBillingKey(String authCode);
 
     /**
      * 카드사에 결제 환불(취소) 요청.

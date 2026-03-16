@@ -23,23 +23,24 @@ import org.springframework.transaction.event.TransactionPhase;
 public class PaymentDomainEventListener {
 
     private final PaymentRepository paymentRepository;
-    private final PaymentWebhookService paymentWebhookService;
+    private final PaymentService paymentService;
     private final PaymentAuthorizationProcessor paymentAuthorizationProcessor;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onAuthorizationStarted(AuthorizationStartedEvent event) {
+        log.info("[Payment] event=Started Authorization paymentId={}", event.paymentId());
         paymentAuthorizationProcessor.processAuthorization(event.paymentId(), event.billingKey());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onPaymentCreated(PaymentCreatedEvent event) {
-        log.info("[DomainEvent] PaymentCreated paymentId={}, merchantId={}, amount={}, occurredAt={}",
+        log.info("[Payment] event=Created paymentId={} merchantId={} amount={} occurredAt={}",
                 event.paymentId(), event.merchantId(), event.amount(), event.occurredAt());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onPaymentStatusChanged(PaymentStatusChangedEvent event) {
-        log.info("[DomainEvent] PaymentStatusChanged paymentId={}, status={}, occurredAt={}",
+        log.info("[Payment] event=StatusChanged paymentId={} status={} occurredAt={}",
                 event.paymentId(), event.status(), event.occurredAt());
 
         if (event.status() != PaymentStatus.FAILED && event.status() != PaymentStatus.CANCELED) {
@@ -47,6 +48,6 @@ public class PaymentDomainEventListener {
         }
 
         paymentRepository.load(PaymentId.from(event.paymentId()))
-                .ifPresent(paymentWebhookService::sendWebhook);
+                .ifPresent(paymentService::sendWebhook);
     }
 }

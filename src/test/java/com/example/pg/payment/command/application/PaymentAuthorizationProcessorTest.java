@@ -1,7 +1,8 @@
 package com.example.pg.payment.command.application;
 
-import com.example.pg.payment.presentation.port.CardCompanyPort;
-import com.example.pg.payment.presentation.port.dto.PaymentApproveDto;
+import com.example.pg.payment.domain.repository.CardCompanyPortRegistry;
+import com.example.pg.payment.presentation.CardCompanyConnect;
+import com.example.pg.payment.presentation.dto.PaymentApproveResponse;
 import com.example.pg.payment.domain.aggregate.CardCompany;
 import com.example.pg.payment.domain.aggregate.Payment;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
@@ -44,7 +45,7 @@ class PaymentAuthorizationProcessorTest {
     @Mock
     private CardCompanyPortRegistry portRegistry;
     @Mock
-    private CardCompanyPort cardCompanyPort;
+    private CardCompanyConnect cardCompanyConnect;
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
@@ -107,9 +108,9 @@ class PaymentAuthorizationProcessorTest {
             );
             payment.startAuthorization();
             when(paymentRepository.load(PaymentId.from(PAYMENT_ID))).thenReturn(Optional.of(payment));
-            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyPort);
-            when(cardCompanyPort.approve(eq(PAYMENT_ID), eq(AMOUNT), eq(BILLING_KEY)))
-                    .thenReturn(PaymentApproveDto.success(PAYMENT_ID, "approval-123", "tx-456", LocalDateTime.now()));
+            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyConnect);
+            when(cardCompanyConnect.approve(eq(PAYMENT_ID), eq(AMOUNT), eq(BILLING_KEY)))
+                    .thenReturn(PaymentApproveResponse.success(PAYMENT_ID, "approval-123", "tx-456", LocalDateTime.now()));
 
             processor.processAuthorization(PAYMENT_ID, BILLING_KEY);
 
@@ -133,9 +134,9 @@ class PaymentAuthorizationProcessorTest {
             );
             payment.startAuthorization();
             when(paymentRepository.load(PaymentId.from(PAYMENT_ID))).thenReturn(Optional.of(payment));
-            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyPort);
-            when(cardCompanyPort.approve(eq(PAYMENT_ID), eq(AMOUNT), eq(BILLING_KEY)))
-                    .thenReturn(PaymentApproveDto.failure(PAYMENT_ID, "E001", "잔액 부족"));
+            when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyConnect);
+            when(cardCompanyConnect.approve(eq(PAYMENT_ID), eq(AMOUNT), eq(BILLING_KEY)))
+                    .thenReturn(PaymentApproveResponse.failure(PAYMENT_ID, "E001", "잔액 부족"));
 
             processor.processAuthorization(PAYMENT_ID, BILLING_KEY);
 

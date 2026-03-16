@@ -1,18 +1,17 @@
-package com.example.pg.payment.command.application;
+package com.example.pg.payment.domain.repository;
 
 import com.example.pg.payment.infrastructure.persistence.CardCompanyRepository;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
-import com.example.pg.payment.presentation.port.CardCompanyPort;
+import com.example.pg.payment.presentation.CardCompanyConnect;
+import com.example.pg.payment.presentation.impl.CardCompanyApiTemplate;
 import com.example.pg.payment.domain.aggregate.CardCompany;
 import com.example.pg.payment.domain.enumerate.CardCompanyStatus;
-import com.example.pg.payment.command.application.adapter.HttpCardCompanyAdapter;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.pg.payment.presentation.impl.CardCompanyAConnectImpl;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
@@ -30,9 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CardCompanyPortRegistry {
 
     private final CardCompanyRepository cardCompanyRepository;
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
-    private final Map<String, CardCompanyPort> portByCode = new ConcurrentHashMap<>();
+    private final CardCompanyApiTemplate apiTemplate;
+    private final Map<String, CardCompanyConnect> portByCode = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
@@ -45,21 +43,20 @@ public class CardCompanyPortRegistry {
         companies.stream()
                 .filter(c -> c.getBaseUrl() != null && !c.getBaseUrl().isBlank())
                 .forEach(c -> {
-                    CardCompanyPort adapter = new HttpCardCompanyAdapter(
-                            restTemplate,
-                            objectMapper,
+                    CardCompanyConnect adapter = new CardCompanyAConnectImpl(
+                            apiTemplate,
                             c.getBaseUrl()
                     );
                     portByCode.put(c.getCode(), adapter);
-                    log.debug("Card company port registered: code={}, baseUrl={}", c.getCode(), c.getBaseUrl());
+                    log.debug("[Payment] CardCompany port registered code={} baseUrl={}", c.getCode(), c.getBaseUrl());
                 });
     }
 
-    public Optional<CardCompanyPort> getPort(String cardCompanyCode) {
+    public Optional<CardCompanyConnect> getPort(String cardCompanyCode) {
         return Optional.ofNullable(portByCode.get(cardCompanyCode));
     }
 
-    public CardCompanyPort getPortOrThrow(String cardCompanyCode) {
+    public CardCompanyConnect getPortOrThrow(String cardCompanyCode) {
         return getPort(cardCompanyCode)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CARD_COMPANY_NOT_FOUND, cardCompanyCode));
     }

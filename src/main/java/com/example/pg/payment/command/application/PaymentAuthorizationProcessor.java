@@ -1,7 +1,8 @@
 package com.example.pg.payment.command.application;
 
-import com.example.pg.payment.presentation.port.CardCompanyPort;
-import com.example.pg.payment.presentation.port.dto.PaymentApproveDto;
+import com.example.pg.payment.domain.repository.CardCompanyPortRegistry;
+import com.example.pg.payment.presentation.CardCompanyConnect;
+import com.example.pg.payment.presentation.dto.PaymentApproveResponse;
 import com.example.pg.payment.domain.aggregate.CardCompany;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
@@ -43,9 +44,9 @@ public class PaymentAuthorizationProcessor {
             if (cardCompany == null) {
                 throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제에 카드사 정보가 없습니다.");
             }
-            CardCompanyPort port = portRegistry.getPortOrThrow(cardCompany.getCode());
+            CardCompanyConnect port = portRegistry.getPortOrThrow(cardCompany.getCode());
 
-            PaymentApproveDto result = port.approve(
+            PaymentApproveResponse result = port.approve(
                     payment.getId(),
                     payment.getAmount(),
                     billingKey
@@ -59,12 +60,12 @@ public class PaymentAuthorizationProcessor {
                 );
                 paymentRepository.save(payment);
                 eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.AUTHORIZED));
-                log.info("결제 승인 성공 paymentId={}, approvalNumber={}, transactionId={}",
+                log.info("[Payment] event=Authorized paymentId={} approvalNumber={} transactionId={}",
                         paymentIdValue, result.approvalNumber(), result.transactionId());
             } else {
                 payment.authorizeFail();
                 eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.FAILED));
-                log.warn("결제 승인 실패 paymentId={}, resultCode={}, message={}",
+                log.info("[Payment] event=Failed paymentId={} resultCode={} message={}",
                         paymentIdValue, result.resultCode(), result.message());
             }
         });

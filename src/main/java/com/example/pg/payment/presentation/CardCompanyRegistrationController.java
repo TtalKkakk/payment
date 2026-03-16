@@ -1,13 +1,14 @@
 package com.example.pg.payment.presentation;
 
 import com.example.pg.payment.command.application.BillingKeyService;
-import com.example.pg.payment.presentation.port.dto.RegistrationSessionDto;
+import com.example.pg.payment.presentation.dto.RegistrationSessionResponse;
 import com.example.pg.payment.infrastructure.persistence.CardRegisterSessionStore;
 import com.example.pg.payment.query.application.BillingKeyQueryService;
 import com.example.pg.payment.query.application.dto.CardCompanyListItemDto;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 /**
  * 카드사 선택 → 등록 세션 생성 → 카드사 페이지 이동 → 콜백 → 빌링키 발급 후 가맹점 returnUrl로 리다이렉트.
  */
+@Slf4j
 @Controller
 @RequestMapping("/billing-key")
 @RequiredArgsConstructor
@@ -41,6 +43,7 @@ public class CardCompanyRegistrationController {
             HttpServletRequest request,
             Model model
     ) {
+        log.debug("[Payment] BillingKey register select returnUrl={}", returnUrl != null ? returnUrl : "");
         List<CardCompanyListItemDto> cardCompanies = billingKeyQueryService.findAllActive().stream()
                 .map(CardCompanyListItemDto::from)
                 .collect(Collectors.toList());
@@ -60,6 +63,7 @@ public class CardCompanyRegistrationController {
             @RequestParam("cardCompanyCode") String cardCompanyCode,
             @RequestParam(value = "returnUrl", required = false) String returnUrl
     ) {
+        log.debug("[Payment] BillingKey register start cardCompanyCode={}", cardCompanyCode);
         String pgCallbackUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/billing-key/callback/register")
                 .build()
@@ -68,7 +72,7 @@ public class CardCompanyRegistrationController {
         String token = sessionStore.put(cardCompanyCode, returnUrl != null ? returnUrl : "");
         String pgCallbackWithToken = pgCallbackUrl + "?token=" + token;
 
-        RegistrationSessionDto result = billingKeyService.createRegistrationSession(cardCompanyCode, pgCallbackWithToken);
+        RegistrationSessionResponse result = billingKeyService.createRegistrationSession(cardCompanyCode, pgCallbackWithToken);
 
         String cardCompanyBaseUrl = billingKeyQueryService.findByCode(cardCompanyCode).getBaseUrl();
         if (cardCompanyBaseUrl == null || cardCompanyBaseUrl.isBlank()) {
@@ -86,6 +90,7 @@ public class CardCompanyRegistrationController {
             @RequestParam("token") String token,
             @RequestParam(value = "authCode", required = false) String authCode
     ) {
+        log.debug("[Payment] BillingKey callback token={}", token != null ? "present" : "null");
         if (authCode == null || authCode.isBlank()) {
             throw new BusinessException(ErrorCode.CARD_REGISTER_AUTH_CODE_REQUIRED);
         }
@@ -99,10 +104,12 @@ public class CardCompanyRegistrationController {
         if (returnUrl == null || returnUrl.isBlank()) {
             returnUrl = "/";
         }
-        // ? 붙일 때 baseUrl/ 가 아닌 baseUrl? 가 되도록 끝의 / 제거
+
         if (!returnUrl.contains("?") && returnUrl.endsWith("/")) {
             returnUrl = returnUrl.substring(0, returnUrl.length() - 1);
         }
+
+        // 쿼리 파라미터로 billing key 전달 x, 브라우저 히스토리에 남겨서 해킹 위험성 있음
         String separator = returnUrl.contains("?") ? "&" : "?";
         String redirect = returnUrl + separator
                 + "billingKeyToken=" + billingKeyResult.billingKeyToken()

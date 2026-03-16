@@ -1,5 +1,7 @@
 package com.example.pg.payment.domain.vo;
 
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,6 +18,9 @@ public class PaymentId {
     }
 
     public static PaymentId from(String value) {
+        if (value == null || value.isBlank()) {
+            throw new BusinessException(ErrorCode.PAYMENT_ID_INVALID);
+        }
         return new PaymentId(value);
     }
 

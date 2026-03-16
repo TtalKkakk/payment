@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CardCompanyPortRegistry")
-class CardCompanyPortRegistryTest {
+class CardCompanyConnectRegistryTest {
 
     private static final String CODE = "SHINHAN";
     private static final String BASE_URL = "https://cardcompany.com/";

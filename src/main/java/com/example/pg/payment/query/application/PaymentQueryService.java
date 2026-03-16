@@ -3,6 +3,7 @@ package com.example.pg.payment.query.application;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
 import com.example.pg.payment.presentation.dto.PaymentDetailResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +12,7 @@ import java.util.Optional;
 /**
  * CQRS Query: 결제 조회 (상태 변경 없음)
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentQueryService {
@@ -27,6 +29,7 @@ public class PaymentQueryService {
      */
     @Transactional(readOnly = true)
     public Optional<PaymentDetailResponse> getPayment(String merchantId, String paymentId) {
+        log.debug("[Payment] Query getPayment merchantId={} paymentId={}", merchantId, paymentId);
         return paymentRepository.findByMerchantIdAndId(merchantId, paymentId)
                 .map(PaymentDetailResponse::from);
     }

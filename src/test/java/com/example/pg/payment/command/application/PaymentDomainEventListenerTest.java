@@ -31,7 +31,7 @@ class PaymentDomainEventListenerTest {
     @Mock
     private PaymentRepository paymentRepository;
     @Mock
-    private PaymentWebhookService paymentWebhookService;
+    private PaymentService paymentService;
 
     @InjectMocks
     private PaymentDomainEventListener listener;
@@ -48,7 +48,7 @@ class PaymentDomainEventListenerTest {
             listener.onPaymentCreated(event);
 
             verify(paymentRepository, never()).load(any());
-            verify(paymentWebhookService, never()).sendWebhook(any());
+            verify(paymentService, never()).sendWebhook(any());
         }
     }
 
@@ -64,7 +64,7 @@ class PaymentDomainEventListenerTest {
             listener.onPaymentStatusChanged(event);
 
             verify(paymentRepository, never()).load(any());
-            verify(paymentWebhookService, never()).sendWebhook(any());
+            verify(paymentService, never()).sendWebhook(any());
         }
 
         @Test
@@ -81,7 +81,7 @@ class PaymentDomainEventListenerTest {
 
             listener.onPaymentStatusChanged(event);
 
-            verify(paymentWebhookService).sendWebhook(any(Payment.class));
+            verify(paymentService).sendWebhook(any(Payment.class));
         }
 
         @Test
@@ -99,7 +99,7 @@ class PaymentDomainEventListenerTest {
 
             listener.onPaymentStatusChanged(event);
 
-            verify(paymentWebhookService).sendWebhook(any(Payment.class));
+            verify(paymentService).sendWebhook(any(Payment.class));
         }
 
         @Test
@@ -110,7 +110,7 @@ class PaymentDomainEventListenerTest {
             listener.onPaymentStatusChanged(event);
 
             verify(paymentRepository, never()).load(any());
-            verify(paymentWebhookService, never()).sendWebhook(any());
+            verify(paymentService, never()).sendWebhook(any());
         }
 
         @Test
@@ -122,7 +122,7 @@ class PaymentDomainEventListenerTest {
             listener.onPaymentStatusChanged(event);
 
             verify(paymentRepository).load(PaymentId.from(PAYMENT_ID));
-            verify(paymentWebhookService, never()).sendWebhook(any());
+            verify(paymentService, never()).sendWebhook(any());
         }
     }
 }

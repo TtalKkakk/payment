@@ -12,6 +12,7 @@ import com.example.pg.payment.presentation.dto.CreatePaymentRequest;
 import com.example.pg.payment.presentation.dto.CreatePaymentResponse;
 import com.example.pg.receipt.command.application.ReceiptPdfService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequestMapping("/payments")
 @RequiredArgsConstructor
@@ -42,6 +44,7 @@ public class PaymentController {
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId
     ) {
+        log.debug("[Payment] API getPayment merchantId={} paymentId={}", merchantId, paymentId);
         return paymentQueryService.getPayment(merchantId, paymentId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -59,6 +62,7 @@ public class PaymentController {
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @RequestBody CreatePaymentRequest request
     ) {
+        log.debug("[Payment] API createPayment merchantId={} amount={}", merchantId, request.amount());
         PaymentId paymentId = paymentService.createPaymentAndStartAuthorization(
                 merchantId,
                 request.amount(),
@@ -84,6 +88,7 @@ public class PaymentController {
             @PathVariable String paymentId,
             @RequestBody AuthorizePaymentRequest request
     ) {
+        log.debug("[Payment] API startAuthorization merchantId={} paymentId={}", merchantId, paymentId);
         paymentService.startAuthorization(paymentId, request.billingKey());
         return ResponseEntity.accepted().build();
     }
@@ -98,6 +103,7 @@ public class PaymentController {
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId
     ) {
+        log.debug("[Payment] API cancelPayment merchantId={} paymentId={}", merchantId, paymentId);
         paymentService.cancelPayment(merchantId, paymentId);
         return ResponseEntity.noContent().build();
     }
@@ -111,6 +117,7 @@ public class PaymentController {
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId
     ) {
+        log.debug("[Payment] API getReceiptPdf merchantId={} paymentId={}", merchantId, paymentId);
         if (paymentId == null || paymentId.isBlank() || ";".equals(paymentId)) {
             throw new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentId);
         }
