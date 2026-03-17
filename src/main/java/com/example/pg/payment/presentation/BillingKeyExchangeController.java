@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Slf4j
 @RestController
-@RequestMapping("/billing-keys")
+@RequestMapping("/api/billing-keys")
 @RequiredArgsConstructor
 public class BillingKeyExchangeController {
 

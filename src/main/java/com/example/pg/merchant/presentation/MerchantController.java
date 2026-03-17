@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Slf4j
 @RestController
-@RequestMapping("/merchants")
+@RequestMapping("/api/merchants")
 @RequiredArgsConstructor
 public class MerchantController {
 
