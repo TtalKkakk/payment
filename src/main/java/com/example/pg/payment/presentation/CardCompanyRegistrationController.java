@@ -7,6 +7,7 @@ import com.example.pg.payment.query.application.BillingKeyQueryService;
 import com.example.pg.payment.query.application.dto.CardCompanyListItemDto;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
+import com.example.pg.payment.presentation.security.BillingKeyRegisterTokenVerifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -39,16 +40,18 @@ public class CardCompanyRegistrationController {
      */
     @GetMapping("/register")
     public String showCardCompanySelect(
-            @RequestParam(value = "returnUrl", required = false) String returnUrl,
+            @RequestParam("token") String token,
             HttpServletRequest request,
             Model model
     ) {
+        String returnUrl = (String) request.getAttribute(BillingKeyRegisterTokenVerifier.ATTR_RETURN_URL);
         log.debug("[Payment] BillingKey register select returnUrl={}", returnUrl != null ? returnUrl : "");
         List<CardCompanyListItemDto> cardCompanies = billingKeyQueryService.findAllActive().stream()
                 .map(CardCompanyListItemDto::from)
                 .collect(Collectors.toList());
         model.addAttribute("cardCompanies", cardCompanies);
         model.addAttribute("returnUrl", returnUrl != null ? returnUrl : "");
+        model.addAttribute("token", token);
         if (request.getAttribute("_csrf") != null) {
             model.addAttribute("_csrf", request.getAttribute("_csrf"));
         }
@@ -61,16 +64,18 @@ public class CardCompanyRegistrationController {
     @PostMapping("/register/start")
     public String startRegistration(
             @RequestParam("cardCompanyCode") String cardCompanyCode,
-            @RequestParam(value = "returnUrl", required = false) String returnUrl
+            @RequestParam("token") String token,
+            HttpServletRequest request
     ) {
         log.debug("[Payment] BillingKey register start cardCompanyCode={}", cardCompanyCode);
+        String returnUrl = (String) request.getAttribute(BillingKeyRegisterTokenVerifier.ATTR_RETURN_URL);
         String pgCallbackUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/billing-key/callback/register")
                 .build()
                 .toUriString();
 
-        String token = sessionStore.put(cardCompanyCode, returnUrl != null ? returnUrl : "");
-        String pgCallbackWithToken = pgCallbackUrl + "?token=" + token;
+        String sessionToken = sessionStore.put(cardCompanyCode, returnUrl != null ? returnUrl : "");
+        String pgCallbackWithToken = pgCallbackUrl + "?token=" + sessionToken;
 
         RegistrationSessionResponse result = billingKeyService.createRegistrationSession(cardCompanyCode, pgCallbackWithToken);
 
