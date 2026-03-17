@@ -393,6 +393,45 @@ form fields:
 
 - **GET** ` /api/payments/{paymentId}/receipt/pdf`
 
+#### Webhook (PG → 가맹점 callbackUrl)
+
+PG는 결제 상태 변경 시(현재 구현 기준: **FAILED, CANCELED**) 가맹점이 결제 생성 시 제공한 `callbackUrl`로 웹훅을 발송합니다.
+
+- **Method**: `POST`
+- **Destination**: 결제 생성 요청의 `callbackUrl`
+- **Content-Type**: `application/json`
+- **Signature Header**: `X-PG-Signature`
+
+##### 서명 검증 규칙
+
+- **알고리즘**: HMAC-SHA256
+- **키**: 가맹점의 `apiSecret` (PG에서 발급받은 값)
+- **data**: 웹훅 요청의 **raw JSON body 문자열(UTF-8)**  
+  (PG는 `PaymentWebhookDto`를 JSON으로 직렬화한 문자열 그대로 서명합니다.)
+- **signature 인코딩**: `Base64( HMAC_SHA256(apiSecret, rawBody) )`
+
+가맹점 서버는 `X-PG-Signature` 헤더 값을 위 규칙으로 재계산해 일치하는지 확인한 뒤 처리해야 합니다.
+
+##### Webhook Payload 스키마
+
+```json
+{
+  "paymentId": "payment-uuid",
+  "status": "FAILED",
+  "merchantId": "merchant-uuid",
+  "merchantOrderId": "ord-001",
+  "amount": 10000,
+  "orderName": "테스트 주문",
+  "occurredAt": "2026-02-28T12:34:56"
+}
+```
+
+##### 가맹점 처리 가이드(권장)
+
+- **멱등 처리**: `paymentId + status` 기준으로 중복 웹훅이 와도 한 번만 처리
+- **응답**: 서명 검증 성공 후 `200 OK` 반환
+- **실패 처리**: 4xx/5xx 응답 시 PG가 재시도 정책을 가질 수 있으므로(향후), 일시적 오류는 재처리 가능하도록 구현 권장
+
 ## 테스트
 
 ```bash
