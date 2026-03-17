@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+@org.springframework.context.annotation.Profile("inmemory-session-store")
 @Component
 public class InMemoryCardRegisterSessionStore implements CardRegisterSessionStore {
 
