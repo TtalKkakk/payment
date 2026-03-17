@@ -35,4 +35,3 @@ public class BillingKeyExchangeController {
         return ResponseEntity.ok(new BillingKeyExchangeResponse(exchanged.billingKeyToken(), exchanged.cardCompanyCode()));
     }
 }
-

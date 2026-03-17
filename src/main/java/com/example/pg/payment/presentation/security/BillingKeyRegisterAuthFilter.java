@@ -31,10 +31,10 @@ public class BillingKeyRegisterAuthFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String uri = request.getRequestURI();
-        if ("/billing-key/register".equals(uri) && "GET".equalsIgnoreCase(request.getMethod())) {
+        if ("/card-form/register".equals(uri) && "GET".equalsIgnoreCase(request.getMethod())) {
             return false;
         }
-        if ("/billing-key/register/start".equals(uri) && "POST".equalsIgnoreCase(request.getMethod())) {
+        if ("/card-form/register/start".equals(uri) && "POST".equalsIgnoreCase(request.getMethod())) {
             return false;
         }
         return true;

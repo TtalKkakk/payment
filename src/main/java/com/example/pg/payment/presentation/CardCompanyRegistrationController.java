@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,7 +30,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Controller
-@RequestMapping("/billing-keys")
+@RequestMapping("/card-form")
 @RequiredArgsConstructor
 public class CardCompanyRegistrationController {
 
@@ -72,7 +74,7 @@ public class CardCompanyRegistrationController {
         log.debug("[Payment] BillingKey register start cardCompanyCode={}", cardCompanyCode);
         String returnUrl = (String) request.getAttribute(BillingKeyRegisterTokenVerifier.ATTR_RETURN_URL);
         String pgCallbackUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/billing-key/callback/register")
+                .path("/card-form/callback/register")
                 .build()
                 .toUriString();
 
@@ -83,7 +85,9 @@ public class CardCompanyRegistrationController {
 
         String cardCompanyBaseUrl = billingKeyQueryService.findByCode(cardCompanyCode).getBaseUrl();
         if (cardCompanyBaseUrl == null || cardCompanyBaseUrl.isBlank()) {
-            return "redirect:/billing-key/register?error=no-base-url";
+            return "redirect:/card-form/register?token="
+                    + URLEncoder.encode(token, StandardCharsets.UTF_8)
+                    + "&error=no-base-url";
         }
         String redirectUrl = cardCompanyBaseUrl.replaceFirst("/$", "") + result.registrationUrl();
         return "redirect:" + redirectUrl;
