@@ -2,7 +2,6 @@ package com.example.pg.payment.infrastructure.persistence;
 
 import com.example.pg.payment.domain.repository.dto.CardRegisterSession;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -18,7 +17,6 @@ import java.util.UUID;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class RedisCardRegisterSessionStore implements CardRegisterSessionStore {
 
     private static final String KEY_PREFIX = "cardRegisterSession:";
