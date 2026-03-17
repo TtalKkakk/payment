@@ -7,6 +7,7 @@ import com.example.pg.payment.query.application.BillingKeyQueryService;
 import com.example.pg.payment.query.application.dto.CardCompanyListItemDto;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
+import com.example.pg.payment.command.application.BillingKeyExchangeService;
 import com.example.pg.payment.presentation.security.BillingKeyRegisterTokenVerifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,12 +28,13 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Controller
-@RequestMapping("/billing-key")
+@RequestMapping("/billing-keys")
 @RequiredArgsConstructor
 public class CardCompanyRegistrationController {
 
     private final BillingKeyQueryService billingKeyQueryService;
     private final BillingKeyService billingKeyService;
+    private final BillingKeyExchangeService billingKeyExchangeService;
     private final CardRegisterSessionStore sessionStore;
 
     /**
@@ -93,7 +95,8 @@ public class CardCompanyRegistrationController {
     @GetMapping("/callback/register")
     public String callback(
             @RequestParam("token") String token,
-            @RequestParam(value = "authCode", required = false) String authCode
+            @RequestParam(value = "authCode", required = false) String authCode,
+            HttpServletRequest request
     ) {
         log.debug("[Payment] BillingKey callback token={}", token != null ? "present" : "null");
         if (authCode == null || authCode.isBlank()) {
@@ -114,11 +117,17 @@ public class CardCompanyRegistrationController {
             returnUrl = returnUrl.substring(0, returnUrl.length() - 1);
         }
 
-        // 쿼리 파라미터로 billing key 전달 x, 브라우저 히스토리에 남겨서 해킹 위험성 있음
+        // billingKeyToken을 브라우저에 노출하지 않기 위해 1회용 code만 전달한다.
+        // 가맹점 서버는 /api/billing-keys/exchange로 code를 보내 billingKeyToken을 교환한다.
+        String merchantId = (String) request.getAttribute(BillingKeyRegisterTokenVerifier.ATTR_MERCHANT_ID);
+        if (merchantId == null || merchantId.isBlank()) {
+            throw new BusinessException(ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID);
+        }
+        String code = billingKeyExchangeService.issueCode(merchantId, billingKeyResult.billingKeyToken(), session.cardCompanyCode());
+
         String separator = returnUrl.contains("?") ? "&" : "?";
         String redirect = returnUrl + separator
-                + "billingKeyToken=" + billingKeyResult.billingKeyToken()
-                + "&cardCompanyCode=" + session.cardCompanyCode();
+                + "code=" + code;
         return "redirect:" + redirect;
     }
 }

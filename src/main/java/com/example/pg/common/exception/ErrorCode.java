@@ -52,6 +52,7 @@ public enum ErrorCode {
     CARD_REGISTER_SESSION_INVALID(HttpStatus.BAD_REQUEST, "E034", "유효하지 않거나 만료된 카드 등록 세션입니다. (token=%s)"),
     CARD_REGISTER_AUTH_CODE_REQUIRED(HttpStatus.BAD_REQUEST, "E035", "유효한 인증 코드가 없습니다. 카드 등록을 다시 시도해 주세요."),
     BILLING_KEY_REGISTER_TOKEN_INVALID(HttpStatus.FORBIDDEN, "E038", "유효하지 않은 카드 등록 요청입니다."),
+    BILLING_KEY_EXCHANGE_CODE_INVALID(HttpStatus.BAD_REQUEST, "E039", "유효하지 않거나 만료된 교환 코드입니다."),
 
     /** 결제 생성 실패 (Tx1 실패). 가맹점: "다시 결제하기" 안내 */
     PAYMENT_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E029", "결제 접수에 실패했습니다. 다시 시도해 주세요."),
