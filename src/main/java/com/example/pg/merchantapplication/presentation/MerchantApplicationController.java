@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/merchant-applications")
+@RequestMapping("/merchant-applications")
 @RequiredArgsConstructor
 public class MerchantApplicationController {
 
