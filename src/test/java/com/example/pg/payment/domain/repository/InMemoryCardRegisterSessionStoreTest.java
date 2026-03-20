@@ -28,7 +28,7 @@ class InMemoryCardRegisterSessionStoreTest {
         @Test
         @DisplayName("put 후 get으로 동일 토큰으로 조회 가능")
         void success() {
-            String token = store.put("SHINHAN", "https://merchant.com/callback");
+            String token = store.put("SHINHAN", "https://merchant.com/callback", "merchant-1");
 
             assertThat(token).isNotBlank();
 
@@ -52,7 +52,7 @@ class InMemoryCardRegisterSessionStoreTest {
         @Test
         @DisplayName("remove 후 get 시 empty")
         void success() {
-            String token = store.put("KB", "https://cb.com");
+            String token = store.put("KB", "https://cb.com", "merchant-1");
             store.remove(token);
 
             assertThat(store.get(token)).isEmpty();

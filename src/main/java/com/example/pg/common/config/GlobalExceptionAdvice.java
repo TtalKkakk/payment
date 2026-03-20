@@ -30,8 +30,6 @@ import java.util.stream.Collectors;
 @ControllerAdvice
 public class GlobalExceptionAdvice {
 
-    private static final String ERROR_VIEW = "error/error";
-
     /** ErrorCode 기반 비즈니스 예외 */
     @ExceptionHandler(BusinessException.class)
     public Object handleBusiness(BusinessException e, HttpServletRequest request) {
@@ -56,7 +54,7 @@ public class GlobalExceptionAdvice {
                     .status(ec.getStatus())
                     .body(ErrorResponse.of(ec.getCode(), message));
         }
-        return toErrorView(ec.getStatus().value(), ec.getCode(), message);
+        return toErrorView(request, ec.getStatus().value(), ec.getCode(), message);
     }
 
     /** 400 Bad Request - 쿼리/경로 파라미터 타입 변환 실패 (어떤 파라미터가 어떤 값으로 실패했는지 로그) */
@@ -73,7 +71,7 @@ public class GlobalExceptionAdvice {
                     .status(HttpStatus.BAD_REQUEST)
                     .body(ErrorResponse.of("BAD_REQUEST", message));
         }
-        return toErrorView(400, "BAD_REQUEST", message);
+        return toErrorView(request, 400, "BAD_REQUEST", message);
     }
 
     /** 400 Bad Request - 잘못된 인자 */
@@ -89,7 +87,7 @@ public class GlobalExceptionAdvice {
                     .status(HttpStatus.BAD_REQUEST)
                     .body(ErrorResponse.of("BAD_REQUEST", e.getMessage()));
         }
-        return toErrorView(400, "BAD_REQUEST", e.getMessage());
+        return toErrorView(request, 400, "BAD_REQUEST", e.getMessage());
     }
 
     /** 409 Conflict - 상태 불일치 */
@@ -101,7 +99,7 @@ public class GlobalExceptionAdvice {
                     .status(HttpStatus.CONFLICT)
                     .body(ErrorResponse.of("CONFLICT", e.getMessage()));
         }
-        return toErrorView(409, "CONFLICT", e.getMessage());
+        return toErrorView(request, 409, "CONFLICT", e.getMessage());
     }
 
     /** 409 Conflict - 낙관적 락 실패 (동시 수정) */
@@ -114,7 +112,7 @@ public class GlobalExceptionAdvice {
                     .status(HttpStatus.CONFLICT)
                     .body(ErrorResponse.of(ErrorCode.CONCURRENT_MODIFICATION.getCode(), message));
         }
-        return toErrorView(409, ErrorCode.CONCURRENT_MODIFICATION.getCode(), message);
+        return toErrorView(request, 409, ErrorCode.CONCURRENT_MODIFICATION.getCode(), message);
     }
 
     /** 409 Conflict - unique 제약 위반 (사업자번호 중복 등) */
@@ -127,7 +125,7 @@ public class GlobalExceptionAdvice {
                     .status(HttpStatus.CONFLICT)
                     .body(ErrorResponse.of(ErrorCode.DUPLICATE_BUSINESS_NUMBER.getCode(), message));
         }
-        return toErrorView(409, ErrorCode.DUPLICATE_BUSINESS_NUMBER.getCode(), message);
+        return toErrorView(request, 409, ErrorCode.DUPLICATE_BUSINESS_NUMBER.getCode(), message);
     }
 
     /** 400 Bad Request - @Valid 검증 실패 */
@@ -145,7 +143,7 @@ public class GlobalExceptionAdvice {
                     .status(HttpStatus.BAD_REQUEST)
                     .body(ErrorResponse.of("VALIDATION_FAILED", "입력값 검증에 실패했습니다.", errors));
         }
-        return toErrorView(400, "VALIDATION_FAILED", "입력값 검증에 실패했습니다.");
+        return toErrorView(request, 400, "VALIDATION_FAILED", "입력값 검증에 실패했습니다.");
     }
 
     /** 404 - 핸들러 없음 (잘못된 URL) */
@@ -157,7 +155,7 @@ public class GlobalExceptionAdvice {
                     .status(HttpStatus.NOT_FOUND)
                     .body(ErrorResponse.of("NOT_FOUND", "요청하신 경로를 찾을 수 없습니다."));
         }
-        return toErrorView(404, "NOT_FOUND", "요청하신 경로를 찾을 수 없습니다.");
+        return toErrorView(request, 404, "NOT_FOUND", "요청하신 경로를 찾을 수 없습니다.");
     }
 
     /** 404 - 정적 리소스 없음 (Spring 6.1+, 경로가 리소스로 해석됐으나 없을 때) */
@@ -169,7 +167,7 @@ public class GlobalExceptionAdvice {
                     .status(HttpStatus.NOT_FOUND)
                     .body(ErrorResponse.of("NOT_FOUND", "요청하신 경로를 찾을 수 없습니다."));
         }
-        return toErrorView(404, "NOT_FOUND", "요청하신 경로를 찾을 수 없습니다.");
+        return toErrorView(request, 404, "NOT_FOUND", "요청하신 경로를 찾을 수 없습니다.");
     }
 
     /** 500 - 그 외 예외 */
@@ -183,7 +181,7 @@ public class GlobalExceptionAdvice {
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ErrorResponse.of(code, message));
         }
-        return toErrorView(500, code, message);
+        return toErrorView(request, 500, code, message);
     }
 
     /**
@@ -202,8 +200,12 @@ public class GlobalExceptionAdvice {
         return accept.contains("application/json");
     }
 
-    private ModelAndView toErrorView(int statusCode, String code, String message) {
-        ModelAndView mav = new ModelAndView(ERROR_VIEW);
+    private ModelAndView toErrorView(HttpServletRequest request, int statusCode, String code, String message) {
+        String uri = request.getRequestURI();
+        boolean isAdmin = uri != null && uri.startsWith("/admin");
+        String viewName = isAdmin ? "error/admin-error" : "error/user-error";
+
+        ModelAndView mav = new ModelAndView(viewName);
         mav.setStatus(HttpStatus.valueOf(statusCode));
         mav.addObject("statusCode", statusCode);
         mav.addObject("code", code);

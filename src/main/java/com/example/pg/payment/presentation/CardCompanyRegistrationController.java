@@ -73,12 +73,20 @@ public class CardCompanyRegistrationController {
     ) {
         log.debug("[Payment] BillingKey register start cardCompanyCode={}", cardCompanyCode);
         String returnUrl = (String) request.getAttribute(BillingKeyRegisterTokenVerifier.ATTR_RETURN_URL);
+        String merchantId = (String) request.getAttribute(BillingKeyRegisterTokenVerifier.ATTR_MERCHANT_ID);
+        if (merchantId == null || merchantId.isBlank()) {
+            throw new BusinessException(ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID);
+        }
         String pgCallbackUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/card-form/callback/register")
                 .build()
                 .toUriString();
 
-        String sessionToken = sessionStore.put(cardCompanyCode, returnUrl != null ? returnUrl : "");
+        String sessionToken = sessionStore.put(
+                cardCompanyCode,
+                returnUrl != null ? returnUrl : "",
+                merchantId
+        );
         String pgCallbackWithToken = pgCallbackUrl + "?token=" + sessionToken;
 
         RegistrationSessionResponse result = billingKeyService.createRegistrationSession(cardCompanyCode, pgCallbackWithToken);
@@ -123,7 +131,7 @@ public class CardCompanyRegistrationController {
 
         // billingKeyToken을 브라우저에 노출하지 않기 위해 1회용 code만 전달한다.
         // 가맹점 서버는 /api/billing-keys/exchange로 code를 보내 billingKeyToken을 교환한다.
-        String merchantId = (String) request.getAttribute(BillingKeyRegisterTokenVerifier.ATTR_MERCHANT_ID);
+        String merchantId = session.merchantId();
         if (merchantId == null || merchantId.isBlank()) {
             throw new BusinessException(ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID);
         }

@@ -36,11 +36,11 @@ public class RedisCardRegisterSessionStore implements CardRegisterSessionStore {
     }
 
     @Override
-    public String put(String cardCompanyCode, String returnUrl) {
+    public String put(String cardCompanyCode, String returnUrl, String merchantId) {
         String token = UUID.randomUUID().toString();
         String key = KEY_PREFIX + token;
         try {
-            String json = objectMapper.writeValueAsString(new CardRegisterSession(cardCompanyCode, returnUrl));
+            String json = objectMapper.writeValueAsString(new CardRegisterSession(cardCompanyCode, returnUrl, merchantId));
             redisTemplate.opsForValue().set(key, json, ttl);
             return token;
         } catch (Exception e) {

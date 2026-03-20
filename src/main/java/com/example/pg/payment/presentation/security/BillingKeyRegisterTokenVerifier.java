@@ -38,6 +38,14 @@ public class BillingKeyRegisterTokenVerifier {
     private final StringRedisTemplate redisTemplate;
 
     public Verified verifyOrThrow(String token) {
+        return verifyOrThrow(token, true);
+    }
+
+    /**
+     * @param consumeNonce true면 nonce를 1회성으로 소비한다.
+     *                     false면 nonce 소비를 스킵한다(예: GET 페이지 렌더링 단계).
+     */
+    public Verified verifyOrThrow(String token, boolean consumeNonce) {
         if (token == null || token.isBlank()) {
             throw new BusinessException(ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID);
         }
@@ -74,12 +82,14 @@ public class BillingKeyRegisterTokenVerifier {
             throw new BusinessException(ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID);
         }
 
-        // replay 방지: apiKey+nonce를 1회성으로 소비 처리 (exp까지 TTL)
-        String nonceKey = "billingKeyRegister:nonce:" + payload.apiKey() + ":" + payload.nonce();
-        Duration ttl = Duration.ofSeconds(Math.max(1, payload.exp() - now));
-        Boolean ok = redisTemplate.opsForValue().setIfAbsent(nonceKey, "1", ttl);
-        if (ok == null || !ok) {
-            throw new BusinessException(ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID);
+        if (consumeNonce) {
+            // replay 방지: apiKey+nonce를 1회성으로 소비 처리 (exp까지 TTL)
+            String nonceKey = "billingKeyRegister:nonce:" + payload.apiKey() + ":" + payload.nonce();
+            Duration ttl = Duration.ofSeconds(Math.max(1, payload.exp() - now));
+            Boolean ok = redisTemplate.opsForValue().setIfAbsent(nonceKey, "1", ttl);
+            if (ok == null || !ok) {
+                throw new BusinessException(ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID);
+            }
         }
 
         return new Verified(merchant.getId(), payload.apiKey(), payload.returnUrl());

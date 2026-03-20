@@ -13,7 +13,7 @@ public interface CardRegisterSessionStore {
     /**
      * 세션 저장 후 토큰 반환.
      */
-    String put(String cardCompanyCode, String returnUrl);
+    String put(String cardCompanyCode, String returnUrl, String merchantId);
 
     Optional<CardRegisterSession> get(String token);
 

@@ -70,7 +70,9 @@ app:
 - **브라우저 카드등록(UI) 플로우**: `/card-form/**`
 - **관리자 UI**: `/admin/**`
 
-주의: `@RestController`에 자동 prefix가 붙는 구조가 아니라, **컨트롤러의 `@RequestMapping`이 곧 실제 경로**입니다.
+주의: 실제 요청 경로는 **`/api/**` 규칙이 적용되도록** `WebMvcConfig`에서 `@RestController`에 한해 `/api` prefix를 자동 적용합니다.
+즉, 문서에서 말하는 “가맹점(서버-서버) API”의 실제 경로는 **`/api/**`를 기준으로 보시면 됩니다.
+반대로 `/card-form/**` 및 `/admin/**` 같은 HTML(UI) 라우트는 자동 prefix 대상이 아닙니다.
 
 ### 가맹점 API 인증
 

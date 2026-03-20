@@ -15,9 +15,9 @@ public class InMemoryCardRegisterSessionStore implements CardRegisterSessionStor
     private final ConcurrentHashMap<String, CardRegisterSession> store = new ConcurrentHashMap<>();
 
     @Override
-    public String put(String cardCompanyCode, String returnUrl) {
+    public String put(String cardCompanyCode, String returnUrl, String merchantId) {
         String token = UUID.randomUUID().toString();
-        store.put(token, new CardRegisterSession(cardCompanyCode, returnUrl));
+        store.put(token, new CardRegisterSession(cardCompanyCode, returnUrl, merchantId));
         return token;
     }
 

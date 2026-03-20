@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 오류</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Noto Sans KR', -apple-system, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #212529;
+        }
+        .error-box {
+            text-align: center;
+            padding: 2.5rem;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            max-width: 420px;
+        }
+        .status-code { font-size: 3.5rem; font-weight: 700; color: #6c757d; line-height: 1; margin-bottom: 0.5rem; }
+        .code { font-size: 0.875rem; color: #868e96; margin-bottom: 1rem; }
+        .message { font-size: 1.0625rem; color: #495057; line-height: 1.5; margin-bottom: 1.5rem; }
+        .btn { display: inline-block; padding: 0.625rem 1.25rem; background: #212529; color: #fff; text-decoration: none; border-radius: 6px; font-size: 0.9375rem; cursor: pointer; border: none; }
+        .btn:hover { background: #343a40; color: #fff; }
+    </style>
+</head>
+<body>
+<div class="error-box">
+    <div class="status-code" th:text="${status} ?: 403">403</div>
+    <div class="code" th:text="${error} ?: 'FORBIDDEN'">FORBIDDEN</div>
+    <div class="message" th:text="${message} ?: '접근이 거부되었습니다.'">접근이 거부되었습니다.</div>
+    <button class="btn" type="button" onclick="history.back()">뒤로가기</button>
+</div>
+</body>
+</html>
+

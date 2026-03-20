@@ -1,7 +1,6 @@
 package com.example.pg.payment.presentation.security;
 
 import com.example.pg.common.exception.BusinessException;
-import com.example.pg.common.exception.ErrorCode;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,14 +44,24 @@ public class BillingKeyRegisterAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String token = request.getParameter(TOKEN_PARAM);
         try {
-            BillingKeyRegisterTokenVerifier.Verified verified = tokenVerifier.verifyOrThrow(token);
+            // GET: 토큰 검증만 수행(페이지 렌더링 단계이므로 nonce 소비 스킵)
+            // POST: start 단계에서만 nonce를 소비(재사용 공격 방지)
+            boolean consumeNonce = "POST".equalsIgnoreCase(request.getMethod());
+            BillingKeyRegisterTokenVerifier.Verified verified = tokenVerifier.verifyOrThrow(token, consumeNonce);
             request.setAttribute(BillingKeyRegisterTokenVerifier.ATTR_MERCHANT_ID, verified.merchantId());
             request.setAttribute(BillingKeyRegisterTokenVerifier.ATTR_API_KEY, verified.apiKey());
             request.setAttribute(BillingKeyRegisterTokenVerifier.ATTR_RETURN_URL, verified.returnUrl());
             filterChain.doFilter(request, response);
         } catch (BusinessException e) {
             log.warn("[Payment] BillingKey register denied uri={} reason={}", request.getRequestURI(), e.getErrorCode().name());
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID.getMessageTemplate());
+            // 사용자용 에러 페이지로 forward (sendError는 /error로 떨어져 Whitelabel을 유발할 수 있음)
+            int statusCode = e.getErrorCode().getStatus().value();
+            response.setStatus(statusCode);
+            request.setAttribute("statusCode", statusCode);
+            request.setAttribute("code", e.getErrorCode().getCode());
+            request.setAttribute("message", e.getErrorCode().formatMessage(e.getArgs()));
+
+            request.getRequestDispatcher("/ui-error").forward(request, response);
         }
     }
 }
