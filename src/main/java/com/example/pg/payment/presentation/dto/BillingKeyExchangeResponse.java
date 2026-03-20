@@ -5,7 +5,10 @@ package com.example.pg.payment.presentation.dto;
  */
 public record BillingKeyExchangeResponse(
         String billingKeyToken,
-        String cardCompanyCode
+        String cardCompanyCode,
+        String cardBrand,
+        String cardNumberMasked,
+        String expiryMasked
 ) {
 }
 

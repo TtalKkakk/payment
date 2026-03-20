@@ -285,7 +285,10 @@ form fields:
 ```json
 {
   "billingKeyToken": "bk_token_xxx",
-  "cardCompanyCode": "SHINHAN"
+  "cardCompanyCode": "SHINHAN",
+  "cardBrand": "VISA",
+  "cardNumberMasked": "****1234",
+  "expiryMasked": "12/30"
 }
 ```
 

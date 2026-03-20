@@ -127,7 +127,14 @@ public class CardCompanyRegistrationController {
         if (merchantId == null || merchantId.isBlank()) {
             throw new BusinessException(ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID);
         }
-        String code = billingKeyExchangeService.issueCode(merchantId, billingKeyResult.billingKeyToken(), session.cardCompanyCode());
+        String code = billingKeyExchangeService.issueCode(
+                merchantId,
+                billingKeyResult.billingKeyToken(),
+                session.cardCompanyCode(),
+                billingKeyResult.cardBrand(),
+                billingKeyResult.cardNumberMasked(),
+                billingKeyResult.expiryMasked()
+        );
 
         String separator = returnUrl.contains("?") ? "&" : "?";
         String redirect = returnUrl + separator

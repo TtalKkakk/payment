@@ -73,7 +73,7 @@ class BillingKeyServiceTest {
         @DisplayName("카드사 포트로 빌링키 발급 위임")
         void success() {
             when(portRegistry.getPortOrThrow(CARD_COMPANY_CODE)).thenReturn(cardCompanyConnect);
-            BillingKeyTokenResponse dto = new BillingKeyTokenResponse("bk-token-1");
+            BillingKeyTokenResponse dto = new BillingKeyTokenResponse("bk-token-1", "VISA", "****1234", "12/30");
             when(cardCompanyConnect.issueBillingKey(AUTH_CODE)).thenReturn(dto);
 
             BillingKeyTokenResponse result = billingKeyService.issueBillingKey(CARD_COMPANY_CODE, AUTH_CODE);

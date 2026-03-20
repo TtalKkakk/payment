@@ -25,11 +25,24 @@ public class BillingKeyExchangeService {
 
     private final StringRedisTemplate redisTemplate;
 
-    public String issueCode(String merchantId, String billingKeyToken, String cardCompanyCode) {
+    public String issueCode(
+            String merchantId,
+            String billingKeyToken,
+            String cardCompanyCode,
+            String cardBrand,
+            String cardNumberMasked,
+            String expiryMasked
+    ) {
         String code = UUID.randomUUID().toString();
         String key = KEY_PREFIX + code;
-        // 값 포맷: merchantId|cardCompanyCode|billingKeyToken
-        String value = merchantId + "|" + cardCompanyCode + "|" + billingKeyToken;
+        // 값 포맷: merchantId|cardCompanyCode|billingKeyToken|cardBrand|cardNumberMasked|expiryMasked
+        // null은 Redis 값 포맷 충돌을 피하기 위해 빈 문자열로 저장한다.
+        String value = merchantId + "|" +
+                cardCompanyCode + "|" +
+                billingKeyToken + "|" +
+                (cardBrand != null ? cardBrand : "") + "|" +
+                (cardNumberMasked != null ? cardNumberMasked : "") + "|" +
+                (expiryMasked != null ? expiryMasked : "");
         redisTemplate.opsForValue().set(key, value, DEFAULT_TTL);
         return code;
     }
@@ -49,19 +62,32 @@ public class BillingKeyExchangeService {
             throw new BusinessException(ErrorCode.BILLING_KEY_EXCHANGE_CODE_INVALID);
         }
 
-        String[] parts = value.split("\\|", 3);
-        if (parts.length != 3) {
+        // 레거시 호환:
+        // - 과거: merchantId|cardCompanyCode|billingKeyToken (3필드)
+        // - 현재: merchantId|cardCompanyCode|billingKeyToken|cardBrand|cardNumberMasked|expiryMasked (6필드)
+        String[] parts = value.split("\\|", 6);
+        if (parts.length != 3 && parts.length != 6) {
             throw new BusinessException(ErrorCode.BILLING_KEY_EXCHANGE_CODE_INVALID);
         }
+
         String storedMerchantId = parts[0];
         String cardCompanyCode = parts[1];
         String billingKeyToken = parts[2];
+        String cardBrand = parts.length >= 4 ? parts[3] : null;
+        String cardNumberMasked = parts.length >= 5 ? parts[4] : null;
+        String expiryMasked = parts.length >= 6 ? parts[5] : null;
 
         if (!merchantId.equals(storedMerchantId)) {
             throw new BusinessException(ErrorCode.BILLING_KEY_EXCHANGE_CODE_INVALID);
         }
 
-        return new ExchangedDto(billingKeyToken, cardCompanyCode);
+        return new ExchangedDto(
+                billingKeyToken,
+                cardCompanyCode,
+                cardBrand,
+                cardNumberMasked,
+                expiryMasked
+        );
     }
 }
 

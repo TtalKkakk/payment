@@ -32,6 +32,12 @@ public class BillingKeyExchangeController {
     ) {
         log.debug("[Payment] API exchange billingKey code merchantId={}", merchantId);
         var exchanged = exchangeService.exchangeOrThrow(merchantId, request.code());
-        return ResponseEntity.ok(new BillingKeyExchangeResponse(exchanged.billingKeyToken(), exchanged.cardCompanyCode()));
+        return ResponseEntity.ok(new BillingKeyExchangeResponse(
+                exchanged.billingKeyToken(),
+                exchanged.cardCompanyCode(),
+                exchanged.cardBrand(),
+                exchanged.cardNumberMasked(),
+                exchanged.expiryMasked()
+        ));
     }
 }

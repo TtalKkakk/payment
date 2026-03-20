@@ -63,7 +63,12 @@ public class CardCompanyAConnectImpl implements CardCompanyConnect {
         String url = buildUrl(BILLING_KEY_PATH);
         BillingKeyRequest request = new BillingKeyRequest(authCode);
         BillingKeyResponse body = apiTemplate.postForObject(url, request, BillingKeyResponse.class, "빌링키 발급");
-        return new BillingKeyTokenResponse(body.billingKeyToken());
+        return new BillingKeyTokenResponse(
+                body.billingKeyToken(),
+                body.cardBrand(),
+                body.cardNumberMasked(),
+                body.expiryMasked()
+        );
     }
 
     @Override
