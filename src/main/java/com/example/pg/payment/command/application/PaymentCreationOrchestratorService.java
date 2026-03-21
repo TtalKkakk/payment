@@ -1,0 +1,59 @@
+package com.example.pg.payment.command.application;
+
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
+import com.example.pg.payment.domain.vo.PaymentId;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+/**
+ * 결제 생성(Tx1) + 승인 시작(Tx2) 오케스트레이션.
+ * <p>
+ * {@link PaymentService} 내부에서 {@code this.createPayment()} / {@code this.startAuthorization()}를 호출하면
+ * Spring AOP 프록시를 타지 않아 {@code @Transactional}이 적용되지 않는(self-invocation) 문제가 생길 수 있다.
+ * 이 클래스는 별도 빈에서 {@link PaymentService}를 주입해 호출하여 프록시를 경유하게 한다.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class PaymentCreationOrchestratorService {
+
+    private final PaymentService paymentService;
+
+    /**
+     * 결제하기 단일 API: 트랜잭션 1(결제 생성 READY) + 트랜잭션 2(승인 요청 AUTHORIZING).
+     * Tx1 실패 시 PAYMENT_CREATION_FAILED, Tx2 실패 시 보상(ABORTED) 후 AUTHORIZATION_START_FAILED.
+     */
+    public PaymentId createPaymentAndStartAuthorization(String merchantId, long amount,
+                                                          String merchantOrderId, String orderName,
+                                                          String customerEmail, String customerName,
+                                                          String callbackUrl, String billingKey,
+                                                          String cardCompanyCode) {
+        if (amount <= 0) {
+            throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_INVALID, amount);
+        }
+        if (billingKey == null || billingKey.isBlank()) {
+            throw new BusinessException(ErrorCode.BILLING_KEY_REQUIRED);
+        }
+
+        PaymentId paymentId;
+        try {
+            paymentId = paymentService.createPayment(
+                    merchantId, amount, merchantOrderId, orderName,
+                    customerEmail, customerName, callbackUrl, cardCompanyCode
+            );
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.PAYMENT_CREATION_FAILED);
+        }
+
+        try {
+            paymentService.startAuthorization(paymentId.getValue(), billingKey);
+        } catch (Exception e) {
+            paymentService.compensateCreationFailure(paymentId.getValue());
+            throw new BusinessException(ErrorCode.AUTHORIZATION_START_FAILED, paymentId.getValue());
+        }
+
+        return paymentId;
+    }
+}

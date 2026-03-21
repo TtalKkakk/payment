@@ -3,6 +3,7 @@ package com.example.pg.payment.presentation;
 import com.example.pg.common.config.filter.MerchantAuthFilter;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
+import com.example.pg.payment.command.application.PaymentCreationOrchestratorService;
 import com.example.pg.payment.command.application.PaymentService;
 import com.example.pg.payment.query.application.PaymentQueryService;
 import com.example.pg.payment.domain.vo.PaymentId;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final PaymentCreationOrchestratorService paymentCreationOrchestratorService;
     private final PaymentQueryService paymentQueryService;
     private final ReceiptPdfService receiptPdfService;
 
@@ -63,7 +65,7 @@ public class PaymentController {
             @RequestBody CreatePaymentRequest request
     ) {
         log.debug("[Payment] API createPayment merchantId={} amount={}", merchantId, request.amount());
-        PaymentId paymentId = paymentService.createPaymentAndStartAuthorization(
+        PaymentId paymentId = paymentCreationOrchestratorService.createPaymentAndStartAuthorization(
                 merchantId,
                 request.amount(),
                 request.merchantOrderId(),

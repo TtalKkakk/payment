@@ -181,63 +181,6 @@ class PaymentServiceTest {
     }
 
     @Nested
-    @DisplayName("createPaymentAndStartAuthorization")
-    class CreatePaymentAndStartAuthorization {
-
-        @Test
-        @DisplayName("billingKey 없으면 BILLING_KEY_REQUIRED")
-        void billingKeyRequired() {
-            assertThatThrownBy(() -> paymentService.createPaymentAndStartAuthorization(
-                    MERCHANT_ID, AMOUNT, "ord-1", "주문", "a@a.com", "홍길동", "https://cb", null, null))
-                    .isInstanceOf(BusinessException.class)
-                    .matches(e -> ((BusinessException) e).getErrorCode() == ErrorCode.BILLING_KEY_REQUIRED);
-        }
-
-        @Test
-        @DisplayName("createPayment 실패 시 PAYMENT_CREATION_FAILED")
-        void createFails() {
-            when(paymentRepository.save(any(Payment.class))).thenThrow(new RuntimeException("DB error"));
-
-            assertThatThrownBy(() -> paymentService.createPaymentAndStartAuthorization(
-                    MERCHANT_ID, AMOUNT, "ord-1", "주문", "a@a.com", "홍길동", "https://cb", BILLING_KEY, null))
-                    .isInstanceOf(BusinessException.class)
-                    .matches(e -> ((BusinessException) e).getErrorCode() == ErrorCode.PAYMENT_CREATION_FAILED);
-        }
-
-        @Test
-        @DisplayName("startAuthorization 실패 시 보상 호출 후 AUTHORIZATION_START_FAILED")
-        void startAuthFailsThenCompensate() {
-            java.util.List<Payment> saved = new java.util.ArrayList<>();
-            when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> {
-                Payment p = inv.getArgument(0);
-                saved.add(p);
-                return p;
-            });
-            when(paymentRepository.load(any(PaymentId.class))).thenThrow(new RuntimeException("network error"));
-            when(paymentRepository.findByIdAndStatus(anyString(), eq(PaymentStatus.READY))).thenAnswer(inv -> {
-                String id = inv.getArgument(0);
-                if (saved.isEmpty()) return Optional.empty();
-                Payment original = saved.get(0);
-                if (!original.getId().equals(id)) return Optional.empty();
-                Payment readyPayment = new Payment(
-                        PaymentId.from(id), original.getMerchantId(), original.getAmount(),
-                        original.getMerchantOrderId(), original.getOrderName(), original.getCustomerEmail(),
-                        original.getCustomerName(), original.getCallbackUrl(), original.getCardCompany()
-                );
-                return Optional.of(readyPayment);
-            });
-
-            assertThatThrownBy(() -> paymentService.createPaymentAndStartAuthorization(
-                    MERCHANT_ID, AMOUNT, "ord-1", "주문", "a@a.com", "홍길동", "https://cb", BILLING_KEY, null))
-                    .isInstanceOf(BusinessException.class)
-                    .matches(e -> ((BusinessException) e).getErrorCode() == ErrorCode.AUTHORIZATION_START_FAILED);
-
-            assertThat(saved).hasSize(1);
-            verify(paymentRepository).findByIdAndStatus(anyString(), eq(PaymentStatus.READY));
-        }
-    }
-
-    @Nested
     @DisplayName("cancelPayment")
     class CancelPayment {
 

@@ -102,38 +102,6 @@ public class PaymentService {
     }
 
     /**
-     * 결제하기 단일 API: 트랜잭션 1(결제 생성 READY) + 트랜잭션 2(승인 요청 AUTHORIZING).
-     * Tx1 실패 시 PAYMENT_CREATION_FAILED, Tx2 실패 시 보상(ABORTED) 후 AUTHORIZATION_START_FAILED.
-     */
-    public PaymentId createPaymentAndStartAuthorization(String merchantId, long amount,
-                                                        String merchantOrderId, String orderName,
-                                                        String customerEmail, String customerName,
-                                                        String callbackUrl, String billingKey,
-                                                        String cardCompanyCode) {
-        validateAmount(amount);
-        if (billingKey == null || billingKey.isBlank()) {
-            throw new BusinessException(ErrorCode.BILLING_KEY_REQUIRED);
-        }
-
-        PaymentId paymentId;
-        try {
-            paymentId = createPayment(merchantId, amount, merchantOrderId, orderName,
-                    customerEmail, customerName, callbackUrl, cardCompanyCode);
-        } catch (Exception e) {
-            throw new BusinessException(ErrorCode.PAYMENT_CREATION_FAILED);
-        }
-
-        try {
-            startAuthorization(paymentId.getValue(), billingKey);
-        } catch (Exception e) {
-            compensateCreationFailure(paymentId.getValue());
-            throw new BusinessException(ErrorCode.AUTHORIZATION_START_FAILED, paymentId.getValue());
-        }
-
-        return paymentId;
-    }
-
-    /**
      * 결제 취소(환불)를 요청한다.
      * 카드사에 환불 요청 후 승인되면 status를 CANCELED로 변경하고 웹훅을 발송한다.
      * 해당 가맹점의 결제만 취소할 수 있다.
