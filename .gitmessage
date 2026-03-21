@@ -1,9 +1,21 @@
-# <type>(<scope>): <subject>
-#
-# [optional body]
-# [optional footer]
-#
-# type: feat | fix | docs | style | refactor | test | chore
-# scope: 도메인/모듈 (예: merchant, card, payment)
-# subject: 50자 이내, 명령형 (과거형 X)
-# footer: BREAKING CHANGE, Closes #이슈번호
+# Git commit template 등록 : git config commit.template .gitmessage.txt
+################
+# <타입> : <이모지><제목> 의 형식으로 제목을 아래 공백줄에 작성
+################
+# :sparkles: feat : 기능 추가
+# :bug: fix : 기능 수정
+# :books: docs : 문서 추가 또는 수정
+# :art: style : 코드 포맷팅, 구조 개선
+# :zap: refact : 코드 리팩토링
+# :rocket: rename : 파일 혹은 폴더명 수정 또는 이동
+# :fire: remove  : 파일 삭제
+
+
+################
+# 본문(구체적인 내용)을 아랫줄에 작성
+# 여러 줄의 메시지를 작성할 땐 "-"로 구분
+
+
+################
+# 꼬릿말(footer)을 아랫줄에 작성 (현재 커밋과 관련된 이슈 번호)
+# 예) Ref: #7  || Close: #7

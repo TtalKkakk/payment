@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가맹점 상세 - 관리자</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f5f5f5; padding: 2rem; color: #1a1a1a; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .card { background: #fff; border-radius: 8px; padding: 2rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        h1 { margin-bottom: 1.5rem; font-size: 1.375rem; }
+        .field { margin-bottom: 1rem; }
+        .field-label { font-size: 0.8125rem; color: #666; margin-bottom: 0.25rem; }
+        .field-value { font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .field-value-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .status { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem; }
+        .status-ACTIVE { background: #e8f5e9; color: #2e7d32; }
+        .status-SUSPENDED { background: #fff3e0; color: #e65100; }
+        .status-WITHDRAWN { background: #eceff1; color: #546e7a; }
+        .btn-back { display: inline-block; margin-bottom: 1rem; padding: 0.5rem 1rem; background: #e5e5e5; color: #1a1a1a; border-radius: 6px; text-decoration: none; font-size: 0.875rem; }
+        .btn-back:hover { background: #d1d1d1; }
+        .actions { margin-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+        .btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; font-size: 0.875rem; cursor: pointer; font-family: inherit; }
+        .btn-suspend { background: #e65100; color: #fff; }
+        .btn-suspend:hover { background: #bf360c; }
+        .btn-activate { background: #2e7d32; color: #fff; }
+        .btn-activate:hover { background: #1b5e20; }
+        .btn-withdraw { background: #546e7a; color: #fff; }
+        .btn-withdraw:hover { background: #37474f; }
+        .message { padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; }
+        .message.success { background: #e8f5e9; color: #2e7d32; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div style="margin-bottom: 1rem;">
+        <a th:href="@{/admin/merchants}" class="btn-back">← 목록</a>
+        <form th:action="@{/admin/logout}" method="post" style="display:inline; margin-left:0.5rem;">
+            <input th:if="${_csrf != null}" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <button type="submit" style="background:none;border:none;color:#1565c0;font-size:0.875rem;cursor:pointer;padding:0.5rem 0;">로그아웃</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h1>가맹점 상세</h1>
+
+        <div th:if="${message}" class="message success" th:text="${message}"></div>
+
+        <span th:class="'status status-' + ${merchant.status.name()}" th:text="${merchant.status.name()}"></span>
+
+        <div class="field">
+            <div class="field-label">Merchant ID</div>
+            <div class="field-value" th:text="${merchant.id}"></div>
+        </div>
+        <div class="field">
+            <div class="field-label">가맹점명</div>
+            <div class="field-value field-value-name" th:text="${merchant.name}"></div>
+        </div>
+        <div class="field">
+            <div class="field-label">API Key</div>
+            <div class="field-value" th:text="${merchant.apiKey}"></div>
+        </div>
+        <div class="field">
+            <div class="field-label">API Secret</div>
+            <div class="field-value" th:text="${merchant.apiSecret}"></div>
+        </div>
+        <div class="field" th:if="${merchant.applicationId != null and !merchant.applicationId.isEmpty()}">
+            <div class="field-label">신청서 ID (applicationId)</div>
+            <div class="field-value" th:text="${merchant.applicationId}"></div>
+        </div>
+
+        <div class="actions" th:if="${merchant.status.name() == 'ACTIVE' or merchant.status.name() == 'SUSPENDED'}">
+            <form th:if="${merchant.status.name() == 'ACTIVE'}" th:action="@{/admin/merchants/{merchantId}/suspend(merchantId=${merchant.id})}" method="post" style="display:inline;">
+                <button type="submit" class="btn btn-suspend">API 정지</button>
+            </form>
+            <form th:if="${merchant.status.name() == 'SUSPENDED'}" th:action="@{/admin/merchants/{merchantId}/activate(merchantId=${merchant.id})}" method="post" style="display:inline;">
+                <button type="submit" class="btn btn-activate">정지 해제</button>
+            </form>
+            <form th:if="${merchant.status.name() == 'SUSPENDED'}" th:action="@{/admin/merchants/{merchantId}/withdraw(merchantId=${merchant.id})}" method="post" style="display:inline;">
+                <button type="submit" class="btn btn-withdraw">탈퇴 처리</button>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

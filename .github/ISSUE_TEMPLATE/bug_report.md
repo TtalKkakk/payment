@@ -1,6 +1,7 @@
 ---
 name: 버그 리포트
 description: 잘못된 동작 또는 오류 보고
+about: 버그나 오류를 보고할 때 사용합니다.
 title: "[버그] "
 labels: bug
 assignees: ""
