@@ -1,0 +1,56 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: pg-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:7
+    container_name: pg-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+  pg:
+    # Jenkins에서 빌드 후 `docker save/load`로 EC2에 올린 로컬 이미지 태그
+    image: pg-app:latest
+    container_name: pg-app
+    restart: unless-stopped
+    depends_on:
+      - mysql
+      - redis
+    ports:
+      - "${PG_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+
+      # Redis
+      SPRING_DATA_REDIS_HOST: ${SPRING_DATA_REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${SPRING_DATA_REDIS_PORT:-6379}
+
+      # Secrets / credentials
+      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD}
+
+      # MVP 배포 중 스키마 생성이 필요할 수 있어 ddl-auto를 update로 오버라이드(필요 시 validate로 변경)
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+
+      # 카드 등록 세션 TTL
+      APP_PAYMENT_CARD_REGISTER_SESSION_TTL_SECONDS: ${APP_PAYMENT_CARD_REGISTER_SESSION_TTL_SECONDS:-900}
+
+volumes:
+  mysql_data:
+  redis_data:
+

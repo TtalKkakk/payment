@@ -44,4 +44,7 @@ logs/
 src/main/resources/application.yml
 src/main/resources/application-test.yml
 src/main/resources/application-prod.yml
-docker-compose.logging.yml
+.dockerignore
+deploy.env.example
+keypair1.pem
+pg-app.tar
