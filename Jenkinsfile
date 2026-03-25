@@ -29,7 +29,7 @@ pipeline {
     stage("Build docker image") {
       steps {
         // 단순 배포용: 항상 동일한 로컬 태그(pg-app:latest)를 만들어 save/load로 EC2에 전달합니다.
-        sh "docker build -t pg-app:latest ."
+        sh "docker build --platform=linux/amd64 -t pg-app:latest ."
       }
     }
 
