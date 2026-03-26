@@ -24,6 +24,12 @@ public class RedisSessionStore<T> implements SessionStore<T> {
 
     @Override
     public String put(T cache, String prefix, long ttl) {
+        if (cache == null) {
+            throw new IllegalArgumentException("cache must not be null");
+        }
+        if (prefix == null || prefix.isBlank()) {
+            throw new IllegalArgumentException("prefix must not be null or blank");
+        }
         String id = UUID.randomUUID().toString();
         String key = prefix + id;
         ttl = defenceTTLIfNegative(ttl);

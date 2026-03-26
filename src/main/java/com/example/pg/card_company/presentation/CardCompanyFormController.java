@@ -103,13 +103,6 @@ public class CardCompanyFormController {
         cardCompanyService.removeCardRegisterSession(sessionToken);
 
         String returnUrl = session.returnUrl();
-        if (returnUrl == null || returnUrl.isBlank()) {
-            returnUrl = "/";
-        }
-
-        if (!returnUrl.contains("?") && returnUrl.endsWith("/")) {
-            returnUrl = returnUrl.substring(0, returnUrl.length() - 1);
-        }
 
         // billingKeyToken을 브라우저에 노출하지 않기 위해 1회용 code만 전달한다.
         // 가맹점 서버는 /api/billing-keys/exchange로 code를 보내 billingKeyToken을 교환한다.
