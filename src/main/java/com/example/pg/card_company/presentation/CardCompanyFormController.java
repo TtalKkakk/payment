@@ -3,6 +3,7 @@ package com.example.pg.card_company.presentation;
 import com.example.pg.card_company.application.CardCompanyService;
 import com.example.pg.card_company.application.dto.AuthCodeSession;
 import com.example.pg.card_company.application.dto.CardRegisterSession;
+import com.example.pg.card_company.domain.vo.BaseUrl;
 import com.example.pg.card_company.presentation.dto.RegistrationSessionResponse;
 import com.example.pg.card_company.presentation.dto.BillingKeyTokenResponse;
 import com.example.pg.card_company.util.dto.CardCompanyListItemDto;
@@ -81,13 +82,8 @@ public class CardCompanyFormController {
         // 결과로 HTML 페이지를 만드는 것 x, 브라우저에게 페이지를 리다이렉트하기 전 작업
         RegistrationSessionResponse response = cardCompanyService.createRegistrationSession(cardCompanyCode, pgCallbackWithToken);
 
-        String cardCompanyBaseUrl = cardCompanyService.findByCode(cardCompanyCode).getBaseUrl();
-        if (cardCompanyBaseUrl == null || cardCompanyBaseUrl.isBlank()) {
-            return "redirect:/card-form/register?token="
-                    + URLEncoder.encode(token, StandardCharsets.UTF_8)
-                    + "&error=no-base-url";
-        }
-        String redirectUrl = cardCompanyBaseUrl.replaceFirst("/$", "") + response.registrationUrl();
+        BaseUrl cardCompanyBaseUrl = cardCompanyService.findByCode(cardCompanyCode).getBaseUrl();
+        String redirectUrl = cardCompanyBaseUrl.normalize() + response.registrationUrl();
         return "redirect:" + redirectUrl;
     }
 

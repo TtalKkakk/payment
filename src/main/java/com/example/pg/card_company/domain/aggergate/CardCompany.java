@@ -1,10 +1,17 @@
 package com.example.pg.card_company.domain.aggergate;
 
+import com.example.pg.card_company.domain.converter.BaseUrlConverter;
+import com.example.pg.card_company.domain.converter.CardCompanyCodeConverter;
+import com.example.pg.card_company.domain.converter.CardCompanyNameConverter;
+import com.example.pg.card_company.domain.converter.DisplayOrderConverter;
+import com.example.pg.card_company.domain.vo.BaseUrl;
+import com.example.pg.card_company.domain.vo.CardCompanyCode;
+import com.example.pg.card_company.domain.vo.CardCompanyName;
+import com.example.pg.card_company.domain.vo.DisplayOrder;
 import com.example.pg.payment.domain.aggregate.Payment;
 import com.example.pg.card_company.domain.enumerate.CardCompanyStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
@@ -17,7 +24,6 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "card_companies", uniqueConstraints = @UniqueConstraint(columnNames = "code"))
-@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CardCompany {
 
@@ -26,31 +32,35 @@ public class CardCompany {
     private String id;
 
     @Column(nullable = false, unique = true, length = 50)
-    private String code;
+    @Convert(converter = CardCompanyCodeConverter.class)
+    private CardCompanyCode code;
 
     @Column(nullable = false, length = 100)
-    private String name;
+    @Convert(converter = CardCompanyNameConverter.class)
+    private CardCompanyName name;
 
     @Column(length = 500, name = "base_url")
-    private String baseUrl;
+    @Convert(converter = BaseUrlConverter.class)
+    private BaseUrl baseUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'ACTIVE'")
     private CardCompanyStatus status;
 
     @Column(nullable = false)
-    private int displayOrder = 0;
+    @Convert(converter = DisplayOrderConverter.class)
+    private DisplayOrder displayOrder = new DisplayOrder(0);
 
     @OneToMany(mappedBy = "cardCompany", fetch = FetchType.LAZY)
     private List<Payment> payments = new ArrayList<>();
 
     public CardCompany(String id, String code, String name, String baseUrl, CardCompanyStatus status, int displayOrder) {
         this.id = id;
-        this.code = code;
-        this.name = name;
-        this.baseUrl = baseUrl;
+        this.code = new CardCompanyCode(code);
+        this.name = new CardCompanyName(name);
+        this.baseUrl = new BaseUrl(baseUrl);
         this.status = status;
-        this.displayOrder = displayOrder;
+        this.displayOrder = new DisplayOrder(displayOrder);
     }
 
     public static CardCompany create(String code, String name, String baseUrl) {
@@ -58,6 +68,29 @@ public class CardCompany {
         return new CardCompany(id, code, name, baseUrl, CardCompanyStatus.ACTIVE, 0);
     }
 
+    public String getId() {
+        return id;
+    }
+
+    public String getCode() {
+        return code.value();
+    }
+
+    public String getName() {
+        return name.value();
+    }
+
+    public BaseUrl getBaseUrl() {
+        return baseUrl;
+    }
+
+    public CardCompanyStatus getStatus() {
+        return status;
+    }
+
+    public int getDisplayOrder() {
+        return displayOrder.value();
+    }
 
     public boolean isActive() {
         return status == CardCompanyStatus.ACTIVE;

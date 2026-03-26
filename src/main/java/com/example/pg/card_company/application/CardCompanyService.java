@@ -13,6 +13,7 @@ import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.card_company.domain.aggergate.CardCompany;
 import com.example.pg.card_company.domain.enumerate.CardCompanyStatus;
+import com.example.pg.card_company.domain.vo.CardCompanyCode;
 import com.example.pg.card_company.presentation.dto.RegistrationSessionResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +44,7 @@ public class CardCompanyService {
     @Transactional(readOnly = true)
     public CardCompany findByCode(String code) {
         log.debug("[CardCompany] Query findByCode cardCompanyCode={}", code);
-        return cardCompanyRepository.findByCode(code)
+        return cardCompanyRepository.findByCode(new CardCompanyCode(code))
                 .orElseThrow(() -> new BusinessException(ErrorCode.CARD_COMPANY_NOT_FOUND, code));
     }
 

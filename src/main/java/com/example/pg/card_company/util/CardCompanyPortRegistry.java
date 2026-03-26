@@ -39,15 +39,14 @@ public class CardCompanyPortRegistry {
     public void refresh() {
         portByCode.clear();
         List<CardCompany> companies = cardCompanyRepository.findByStatusOrderByDisplayOrderAsc(CardCompanyStatus.ACTIVE);
-        companies.stream()
-                .filter(c -> c.getBaseUrl() != null && !c.getBaseUrl().isBlank())
+        companies
                 .forEach(c -> {
                     CardCompanyConnect adapter = new CardCompanyAConnectImpl(
                             apiTemplate,
-                            c.getBaseUrl()
+                            c.getBaseUrl().normalize()
                     );
                     portByCode.put(c.getCode(), adapter);
-                    log.debug("[Payment] CardCompany port registered code={} baseUrl={}", c.getCode(), c.getBaseUrl());
+                    log.debug("[Payment] CardCompany port registered code={} baseUrl={}", c.getCode(), c.getBaseUrl().normalize());
                 });
     }
     public CardCompanyConnect getPortOrThrow(String cardCompanyCode) {

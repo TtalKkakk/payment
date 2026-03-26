@@ -12,6 +12,7 @@ import com.example.pg.payment.domain.event.AuthorizationStartedEvent;
 import com.example.pg.payment.domain.event.PaymentCreatedEvent;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
+import com.example.pg.card_company.domain.vo.CardCompanyCode;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.card_company.infrastructure.persistence.CardCompanyRepository;
@@ -57,7 +58,7 @@ public class PaymentService {
         validateAmount(amount);
         PaymentId paymentId = PaymentId.generate();
         var cardCompany = (cardCompanyCode != null && !cardCompanyCode.isBlank())
-                ? cardCompanyRepository.findByCode(cardCompanyCode).orElse(null)
+                ? cardCompanyRepository.findByCode(new CardCompanyCode(cardCompanyCode)).orElse(null)
                 : null;
         Payment payment = new Payment(
                 paymentId, merchantId, amount,
