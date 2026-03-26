@@ -48,6 +48,20 @@ public class MerchantQueryService {
     }
 
     /**
+     * apiKey로 활성 가맹점 조회.
+     * 토큰/필터 계층에서 apiSecret을 이용한 서명 검증 등에 사용된다.
+     */
+    @Transactional(readOnly = true)
+    public Optional<Merchant> findActiveByApiKey(String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return Optional.empty();
+        }
+        log.debug("[Merchant] Query findActiveByApiKey");
+        return merchantRepository.findByApiKey(apiKey)
+                .filter(Merchant::isActive);
+    }
+
+    /**
      * merchantId로 가맹점 조회 (관리자용)
      */
     @Transactional(readOnly = true)

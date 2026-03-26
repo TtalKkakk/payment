@@ -3,7 +3,7 @@ package com.example.pg.common.config.filter;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.merchant.domain.aggregate.Merchant;
-import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
+import com.example.pg.merchant.query.application.MerchantQueryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -28,7 +28,7 @@ public class FormDataTokenVerifier {
     private static final String HMAC_SHA256 = "HmacSHA256";
 
     private final ObjectMapper objectMapper;
-    private final MerchantRepository merchantRepository;
+    private final MerchantQueryService merchantQueryService;
     private final StringRedisTemplate redisTemplate;
     public Verified verifyOrThrow(String token, boolean consumeNonce) {
         if (token == null || token.isBlank()) {
@@ -59,7 +59,7 @@ public class FormDataTokenVerifier {
             throw new BusinessException(ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID);
         }
 
-        Merchant merchant = merchantRepository.findByApiKey(payload.apiKey())
+        Merchant merchant = merchantQueryService.findActiveByApiKey(payload.apiKey())
                 .orElseThrow(() -> new BusinessException(ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID));
 
         String expectedSig = hmacBase64Url(merchant.getApiSecret(), payloadB64);
