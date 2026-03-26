@@ -1,9 +1,9 @@
 package com.example.pg.payment.command.application;
 
-import com.example.pg.payment.domain.repository.CardCompanyPortRegistry;
-import com.example.pg.payment.presentation.CardCompanyConnect;
+import com.example.pg.card_company.util.CardCompanyPortRegistry;
+import com.example.pg.card_company.presentation.CardCompanyConnect;
 import com.example.pg.payment.presentation.dto.PaymentApproveResponse;
-import com.example.pg.payment.domain.aggregate.CardCompany;
+import com.example.pg.card_company.domain.aggergate.CardCompany;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;

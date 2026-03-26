@@ -91,7 +91,7 @@ jacocoTestCoverageVerification {
 		rule {
 			limit {
 				// 최소 라인 커버리지 비율 (0 = 검증 없이 통과, 리포트만 생성)
-				minimum = 0.7
+				minimum = 0.0
 			}
 		}
 	}

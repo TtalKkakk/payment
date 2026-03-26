@@ -1,5 +1,6 @@
 package com.example.pg.payment.domain.aggregate;
 
+import com.example.pg.card_company.domain.aggergate.CardCompany;
 import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.common.exception.BusinessException;
