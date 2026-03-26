@@ -34,7 +34,6 @@ public class MerchantAuthFilter extends OncePerRequestFilter {
      */
     private static final List<String> FILTER_EXCLUDED_PATH_PREFIXES = List.of(
             "/api/admin/",
-            "/admin/",
             "/actuator/",
             "/error",
             "/swagger-ui",
@@ -42,12 +41,11 @@ public class MerchantAuthFilter extends OncePerRequestFilter {
     );
 
     private final MerchantQueryService merchantQueryService;
-
-    /** 가맹점 API는 /api/ 하위만 적용. 그 외 경로는 통과시켜 404 등 정상 처리. */
     private static final String MERCHANT_API_PATH_PREFIX = "/api/";
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         if (!request.getRequestURI().startsWith(MERCHANT_API_PATH_PREFIX)) {
             filterChain.doFilter(request, response);

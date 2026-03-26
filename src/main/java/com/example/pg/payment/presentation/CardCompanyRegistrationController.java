@@ -8,7 +8,7 @@ import com.example.pg.payment.query.application.dto.CardCompanyListItemDto;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.payment.command.application.BillingKeyExchangeService;
-import com.example.pg.payment.presentation.security.BillingKeyRegisterTokenVerifier;
+import com.example.pg.common.config.filter.FormDataTokenVerifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -48,7 +48,7 @@ public class CardCompanyRegistrationController {
             HttpServletRequest request,
             Model model
     ) {
-        String returnUrl = (String) request.getAttribute(BillingKeyRegisterTokenVerifier.ATTR_RETURN_URL);
+        String returnUrl = (String) request.getAttribute(FormDataTokenVerifier.ATTR_RETURN_URL);
         log.debug("[Payment] BillingKey register select returnUrl={}", returnUrl != null ? returnUrl : "");
         List<CardCompanyListItemDto> cardCompanies = billingKeyQueryService.findAllActive().stream()
                 .map(CardCompanyListItemDto::from)
@@ -59,7 +59,7 @@ public class CardCompanyRegistrationController {
         if (request.getAttribute("_csrf") != null) {
             model.addAttribute("_csrf", request.getAttribute("_csrf"));
         }
-        return "cardcompany/card-company-select";
+        return "card_company/card-company-select";
     }
 
     /**
@@ -72,8 +72,8 @@ public class CardCompanyRegistrationController {
             HttpServletRequest request
     ) {
         log.debug("[Payment] BillingKey register start cardCompanyCode={}", cardCompanyCode);
-        String returnUrl = (String) request.getAttribute(BillingKeyRegisterTokenVerifier.ATTR_RETURN_URL);
-        String merchantId = (String) request.getAttribute(BillingKeyRegisterTokenVerifier.ATTR_MERCHANT_ID);
+        String returnUrl = (String) request.getAttribute(FormDataTokenVerifier.ATTR_RETURN_URL);
+        String merchantId = (String) request.getAttribute(FormDataTokenVerifier.ATTR_MERCHANT_ID);
         if (merchantId == null || merchantId.isBlank()) {
             throw new BusinessException(ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID);
         }

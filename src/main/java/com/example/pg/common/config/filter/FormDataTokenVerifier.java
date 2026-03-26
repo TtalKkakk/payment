@@ -1,10 +1,9 @@
-package com.example.pg.payment.presentation.security;
+package com.example.pg.common.config.filter;
 
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.merchant.domain.aggregate.Merchant;
 import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
-import com.example.pg.payment.presentation.dto.BillingKeyRegisterTokenPayload;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -17,14 +16,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 
-/**
- * /billing-key/register 접근 토큰 검증기.
- *
- * 토큰 포맷: base64url(payloadJson) + "." + base64url(HMAC_SHA256(apiSecret, base64url(payloadJson)))
- */
 @Component
 @RequiredArgsConstructor
-public class BillingKeyRegisterTokenVerifier {
+public class FormDataTokenVerifier {
 
     public static final String ATTR_MERCHANT_ID = "billingKeyRegister.merchantId";
     public static final String ATTR_RETURN_URL = "billingKeyRegister.returnUrl";
@@ -36,15 +30,6 @@ public class BillingKeyRegisterTokenVerifier {
     private final ObjectMapper objectMapper;
     private final MerchantRepository merchantRepository;
     private final StringRedisTemplate redisTemplate;
-
-    public Verified verifyOrThrow(String token) {
-        return verifyOrThrow(token, true);
-    }
-
-    /**
-     * @param consumeNonce true면 nonce를 1회성으로 소비한다.
-     *                     false면 nonce 소비를 스킵한다(예: GET 페이지 렌더링 단계).
-     */
     public Verified verifyOrThrow(String token, boolean consumeNonce) {
         if (token == null || token.isBlank()) {
             throw new BusinessException(ErrorCode.BILLING_KEY_REGISTER_TOKEN_INVALID);
@@ -130,5 +115,14 @@ public class BillingKeyRegisterTokenVerifier {
             String apiKey,
             String returnUrl
     ) {}
+    public record BillingKeyRegisterTokenPayload(
+            String apiKey,
+            String returnUrl,
+            long iat,
+            long exp,
+            String nonce,
+            String purpose
+    ) {
+    }
 }
 

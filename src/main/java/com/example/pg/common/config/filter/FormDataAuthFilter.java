@@ -1,4 +1,4 @@
-package com.example.pg.payment.presentation.security;
+package com.example.pg.common.config.filter;
 
 import com.example.pg.common.exception.BusinessException;
 import jakarta.servlet.FilterChain;
@@ -21,11 +21,11 @@ import java.io.IOException;
 @Component
 @Order(2)
 @RequiredArgsConstructor
-public class BillingKeyRegisterAuthFilter extends OncePerRequestFilter {
+public class FormDataAuthFilter extends OncePerRequestFilter {
 
     private static final String TOKEN_PARAM = "token";
 
-    private final BillingKeyRegisterTokenVerifier tokenVerifier;
+    private final FormDataTokenVerifier tokenVerifier;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -47,10 +47,10 @@ public class BillingKeyRegisterAuthFilter extends OncePerRequestFilter {
             // GET: 토큰 검증만 수행(페이지 렌더링 단계이므로 nonce 소비 스킵)
             // POST: start 단계에서만 nonce를 소비(재사용 공격 방지)
             boolean consumeNonce = "POST".equalsIgnoreCase(request.getMethod());
-            BillingKeyRegisterTokenVerifier.Verified verified = tokenVerifier.verifyOrThrow(token, consumeNonce);
-            request.setAttribute(BillingKeyRegisterTokenVerifier.ATTR_MERCHANT_ID, verified.merchantId());
-            request.setAttribute(BillingKeyRegisterTokenVerifier.ATTR_API_KEY, verified.apiKey());
-            request.setAttribute(BillingKeyRegisterTokenVerifier.ATTR_RETURN_URL, verified.returnUrl());
+            FormDataTokenVerifier.Verified verified = tokenVerifier.verifyOrThrow(token, consumeNonce);
+            request.setAttribute(FormDataTokenVerifier.ATTR_MERCHANT_ID, verified.merchantId());
+            request.setAttribute(FormDataTokenVerifier.ATTR_API_KEY, verified.apiKey());
+            request.setAttribute(FormDataTokenVerifier.ATTR_RETURN_URL, verified.returnUrl());
             filterChain.doFilter(request, response);
         } catch (BusinessException e) {
             log.warn("[Payment] BillingKey register denied uri={} reason={}", request.getRequestURI(), e.getErrorCode().name());
