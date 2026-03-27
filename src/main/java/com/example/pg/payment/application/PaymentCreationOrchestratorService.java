@@ -46,10 +46,20 @@ public class PaymentCreationOrchestratorService {
         try {
             paymentService.startAuthorization(paymentId.getValue(), request.billingKey());
         } catch (Exception e) {
-            paymentService.compensateCreationFailure(paymentId.getValue());
+            handleCompensationFailure(paymentId, e);
             throw new BusinessException(ErrorCode.AUTHORIZATION_START_FAILED, paymentId.getValue());
         }
 
         return paymentId;
+    }
+
+    private void handleCompensationFailure(PaymentId paymentId, Exception original) {
+        try {
+            paymentService.compensateCreationFailure(paymentId.getValue());
+        } catch (Exception ce) {
+            log.error("[Payment] compensation failed paymentId={}", paymentId.getValue(), ce);
+            original.addSuppressed(ce);
+            // 재시도
+        }
     }
 }
