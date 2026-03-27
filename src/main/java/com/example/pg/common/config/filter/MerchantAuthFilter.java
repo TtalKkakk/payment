@@ -1,6 +1,6 @@
 package com.example.pg.common.config.filter;
 
-import com.example.pg.merchant.query.application.MerchantQueryService;
+import com.example.pg.merchant.application.MerchantService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,7 +40,7 @@ public class MerchantAuthFilter extends OncePerRequestFilter {
             "/v3/api-docs"
     );
 
-    private final MerchantQueryService merchantQueryService;
+    private final MerchantService merchantService;
     private static final String MERCHANT_API_PATH_PREFIX = "/api/";
 
     @Override
@@ -59,7 +59,7 @@ public class MerchantAuthFilter extends OncePerRequestFilter {
         String apiKey = request.getHeader(API_KEY_HEADER);
         String apiSecret = request.getHeader(API_SECRET_HEADER);
 
-        var merchantId = merchantQueryService.authenticate(apiKey, apiSecret);
+        var merchantId = merchantService.authenticate(apiKey, apiSecret);
 
         if (merchantId.isEmpty()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

@@ -41,6 +41,9 @@ out/
 ### Logs ###
 logs/
 
+# k6 load-test scripts (local only)
+scripts/k6/
+
 src/main/resources/application.yml
 src/main/resources/application-test.yml
 src/main/resources/application-prod.yml

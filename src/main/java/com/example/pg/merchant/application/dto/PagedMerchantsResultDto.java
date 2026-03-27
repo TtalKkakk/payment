@@ -1,4 +1,4 @@
-package com.example.pg.merchant.query.application.dto;
+package com.example.pg.merchant.application.dto;
 
 import com.example.pg.common.util.PaginationHelper;
 import com.example.pg.merchant.domain.aggregate.Merchant;

@@ -1,9 +1,8 @@
 package com.example.pg.merchant.presentation;
 
-import com.example.pg.merchant.command.application.MerchantService;
+import com.example.pg.merchant.application.MerchantService;
 import com.example.pg.merchant.domain.aggregate.Merchant;
-import com.example.pg.merchant.query.application.MerchantQueryService;
-import com.example.pg.merchant.query.application.dto.PagedMerchantsResultDto;
+import com.example.pg.merchant.application.dto.PagedMerchantsResultDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -26,8 +25,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/admin/merchants")
 @RequiredArgsConstructor
 public class MerchantAdminController {
-
-    private final MerchantQueryService merchantQueryService;
     private final MerchantService merchantService;
 
     /**
@@ -41,7 +38,7 @@ public class MerchantAdminController {
             Model model
     ) {
         log.debug("[Merchant] Admin list id={} page={}", id, page);
-        PagedMerchantsResultDto result = merchantQueryService.findPaged(id, page);
+        PagedMerchantsResultDto result = merchantService.findPaged(id, page);
         model.addAttribute("merchants", result.content());
         model.addAttribute("page", result.page());
         model.addAttribute("startPage", result.startPage());
@@ -57,7 +54,7 @@ public class MerchantAdminController {
     @GetMapping("/{merchantId}")
     public String detail(@PathVariable String merchantId, HttpServletRequest request, Model model) {
         log.debug("[Merchant] Admin detail merchantId={}", merchantId);
-        Merchant merchant = merchantQueryService.findById(merchantId);
+        Merchant merchant = merchantService.findById(merchantId);
         model.addAttribute("merchant", merchant);
         model.addAttribute("_csrf", request.getAttribute("_csrf"));
         return "admin/merchants/detail";

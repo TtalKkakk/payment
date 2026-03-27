@@ -6,9 +6,11 @@ import com.example.pg.merchant.domain.enumerate.MerchantStatus;
 import com.example.pg.merchant.domain.vo.ApiKey;
 import com.example.pg.merchant.domain.vo.ApiSecret;
 import com.example.pg.merchant.domain.vo.MerchantName;
+import com.example.pg.merchant.domain.converter.ApiKeyConverter;
+import com.example.pg.merchant.domain.converter.ApiSecretConverter;
+import com.example.pg.merchant.domain.converter.MerchantNameConverter;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
@@ -21,7 +23,6 @@ import java.util.UUID;
                 @UniqueConstraint(columnNames = "applicationId")
         }
 )
-@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Merchant {
 
@@ -30,13 +31,16 @@ public class Merchant {
     private String id;
 
     @Column(nullable = false, length = 100)
-    private String apiKey;
+    @Convert(converter = ApiKeyConverter.class)
+    private ApiKey apiKey;
 
     @Column(nullable = false, length = 100)
-    private String apiSecret;
+    @Convert(converter = ApiSecretConverter.class)
+    private ApiSecret apiSecret;
 
     @Column(nullable = false, length = 100)
-    private String name;
+    @Convert(converter = MerchantNameConverter.class)
+    private MerchantName name;
 
     /** 신청서(application)와 1:1. null이면 관리자 직접 등록 등 신청 경로가 아닌 경우 */
     @Column(length = 36, name = "application_id")
@@ -48,9 +52,9 @@ public class Merchant {
 
     public Merchant(String id, String apiKey, String apiSecret, String name, String applicationId, MerchantStatus status) {
         this.id = id;
-        this.apiKey = apiKey;
-        this.apiSecret = apiSecret;
-        this.name = name;
+        this.apiKey = new ApiKey(apiKey);
+        this.apiSecret = new ApiSecret(apiSecret);
+        this.name = MerchantName.of(name);
         this.applicationId = applicationId;
         this.status = status;
     }
@@ -98,7 +102,7 @@ public class Merchant {
     }
 
     public void regenerateSecret() {
-        this.apiSecret = ApiSecret.ofRandom().value();
+        this.apiSecret = ApiSecret.ofRandom();
     }
 
     /**
@@ -109,13 +113,37 @@ public class Merchant {
         if (this.status != MerchantStatus.WITHDRAWN) {
             throw new BusinessException(ErrorCode.MERCHANT_CANNOT_REACTIVATE, this.status.name());
         }
-        this.name = name.value();
+        this.name = name;
         this.status = MerchantStatus.ACTIVE;
-        this.apiKey = ApiKey.ofRandom().value();
-        this.apiSecret = ApiSecret.ofRandom().value();
+        this.apiKey = ApiKey.ofRandom();
+        this.apiSecret = ApiSecret.ofRandom();
     }
 
     public boolean matchesSecret(String secret) {
-        return this.apiSecret != null && this.apiSecret.equals(secret);
+        return this.apiSecret != null && this.apiSecret.matches(secret);
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getApiKey() {
+        return apiKey == null ? null : apiKey.value();
+    }
+
+    public String getApiSecret() {
+        return apiSecret == null ? null : apiSecret.value();
+    }
+
+    public String getName() {
+        return name == null ? null : name.value();
+    }
+
+    public String getApplicationId() {
+        return applicationId;
+    }
+
+    public MerchantStatus getStatus() {
+        return status;
     }
 }

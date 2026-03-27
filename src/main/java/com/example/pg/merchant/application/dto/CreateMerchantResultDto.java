@@ -1,4 +1,4 @@
-package com.example.pg.merchant.command.application.dto;
+package com.example.pg.merchant.application.dto;
 
 public record CreateMerchantResultDto(
         String apiKey,

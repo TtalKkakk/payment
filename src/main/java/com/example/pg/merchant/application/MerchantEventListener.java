@@ -1,4 +1,4 @@
-package com.example.pg.merchant.command.application;
+package com.example.pg.merchant.application;
 
 import com.example.pg.merchant.domain.event.MerchantActivatedEvent;
 import com.example.pg.merchant.domain.event.MerchantDeletedEvent;

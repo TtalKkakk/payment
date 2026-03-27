@@ -1,4 +1,4 @@
-package com.example.pg.merchant.command.application.adapter;
+package com.example.pg.merchant.application.adapter;
 
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;

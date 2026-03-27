@@ -1,12 +1,11 @@
 package com.example.pg.merchant.presentation;
 
-import com.example.pg.merchant.command.application.MerchantService;
-import com.example.pg.merchant.command.application.dto.RegenerateSecretResultDto;
+import com.example.pg.merchant.application.MerchantService;
+import com.example.pg.merchant.application.dto.RegenerateSecretResultDto;
 import com.example.pg.merchant.domain.aggregate.Merchant;
 import com.example.pg.merchant.presentation.dto.CredentialsRequest;
 import com.example.pg.merchant.presentation.dto.MerchantCredentialsResponse;
 import com.example.pg.merchant.presentation.dto.RegenerateSecretResponse;
-import com.example.pg.merchant.query.application.MerchantQueryService;
 import com.example.pg.common.config.filter.MerchantAuthFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -30,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class MerchantController {
 
     private final MerchantService merchantService;
-    private final MerchantQueryService merchantQueryService;
 
     /**
      * 사업자번호·비밀번호로 인증 후, 승인된 신청에 한해 apiKey·apiSecret 조회.
@@ -39,7 +37,7 @@ public class MerchantController {
     @PostMapping("/credentials")
     public ResponseEntity<MerchantCredentialsResponse> getCredentials(@Valid @RequestBody CredentialsRequest request) {
         log.debug("[Merchant] API getCredentials businessNumber={}", request.businessNumber());
-        Merchant merchant = merchantQueryService.findKeyAndSecretResponse(request.businessNumber(), request.password());
+        Merchant merchant = merchantService.findKeyAndSecretResponse(request.businessNumber(), request.password());
         return ResponseEntity.ok(new MerchantCredentialsResponse(merchant.getApiKey(), merchant.getApiSecret()));
     }
 
