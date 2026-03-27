@@ -8,8 +8,6 @@ import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
-import com.example.pg.common.exception.BusinessException;
-import com.example.pg.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,10 +34,6 @@ public class PaymentAuthorizationProcessor {
         PaymentId paymentId = PaymentId.from(paymentIdValue);
 
         paymentRepository.load(paymentId).ifPresent(payment -> {
-            if (payment.getStatus() != PaymentStatus.AUTHORIZING) {
-                return;
-            }
-
             CardCompany cardCompany = payment.getCardCompany();
             CardCompanyConnect port = portRegistry.getPortOrThrow(cardCompany.getCode());
 
