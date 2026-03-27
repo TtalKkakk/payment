@@ -1,4 +1,4 @@
-package com.example.pg.merchantapplication.query.application.dto;
+package com.example.pg.merchantapplication.application.dto;
 
 import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
 

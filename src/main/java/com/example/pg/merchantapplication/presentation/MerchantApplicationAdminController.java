@@ -1,9 +1,8 @@
 package com.example.pg.merchantapplication.presentation;
 
-import com.example.pg.merchantapplication.command.application.MerchantApplicationService;
+import com.example.pg.merchantapplication.application.MerchantApplicationService;
 import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
-import com.example.pg.merchantapplication.query.application.MerchantApplicationQueryService;
-import com.example.pg.merchantapplication.query.application.dto.PagedApplicationsResultDto;
+import com.example.pg.merchantapplication.application.dto.PagedApplicationsResultDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -27,7 +26,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class MerchantApplicationAdminController {
 
-    private final MerchantApplicationQueryService merchantApplicationQueryService;
     private final MerchantApplicationService merchantApplicationService;
 
     /**
@@ -43,7 +41,7 @@ public class MerchantApplicationAdminController {
             Model model
     ) {
         log.debug("[MerchantApplication] Admin list status={} businessNumber={} page={}", status, businessNumber, page);
-        PagedApplicationsResultDto result = merchantApplicationQueryService.findPaged(status, businessNumber, Math.max(0, page));
+        PagedApplicationsResultDto result = merchantApplicationService.findPaged(status, businessNumber, Math.max(0, page));
         model.addAttribute("page", result.page());
         model.addAttribute("applications", result.content());
         model.addAttribute("status", status);
@@ -60,7 +58,7 @@ public class MerchantApplicationAdminController {
     @GetMapping("/{applicationId}")
     public String detail(@PathVariable String applicationId, HttpServletRequest request, Model model) {
         log.debug("[MerchantApplication] Admin detail applicationId={}", applicationId);
-        MerchantApplication merchantApplication = merchantApplicationQueryService.findById(applicationId);
+        MerchantApplication merchantApplication = merchantApplicationService.findById(applicationId);
         model.addAttribute("merchantApplication", merchantApplication);
         model.addAttribute("_csrf", request.getAttribute("_csrf"));
         return "admin/merchant-applications/detail";

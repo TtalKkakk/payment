@@ -1,13 +1,12 @@
 package com.example.pg.merchantapplication.presentation;
 
-import com.example.pg.merchantapplication.command.application.MerchantApplicationService;
+import com.example.pg.merchantapplication.application.MerchantApplicationService;
 import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
 import com.example.pg.merchantapplication.presentation.dto.ApplicationStatusRequest;
 import com.example.pg.merchantapplication.presentation.dto.ApplicationStatusResponse;
 import com.example.pg.merchantapplication.presentation.dto.ApplyMerchantRequest;
 import com.example.pg.merchantapplication.presentation.dto.DeleteMerchantApplicationRequest;
 import com.example.pg.merchantapplication.presentation.dto.ApplyMerchantResponse;
-import com.example.pg.merchantapplication.query.application.MerchantApplicationQueryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.*;
 public class MerchantApplicationController {
 
     private final MerchantApplicationService merchantApplicationService;
-    private final MerchantApplicationQueryService merchantApplicationQueryService;
 
     @PostMapping
     public ResponseEntity<ApplyMerchantResponse> apply(@Valid @RequestBody ApplyMerchantRequest request) {
@@ -50,7 +48,7 @@ public class MerchantApplicationController {
     public ResponseEntity<ApplicationStatusResponse> getStatusByBusinessNumber(
             @Valid @RequestBody ApplicationStatusRequest request) {
         log.debug("[MerchantApplication] API getStatusByBusinessNumber businessNumber={}", request.businessNumber());
-        MerchantApplication merchantApplication = merchantApplicationQueryService.getByBusinessNumberAndPassword(
+        MerchantApplication merchantApplication = merchantApplicationService.getByBusinessNumberAndPassword(
                 request.businessNumber(), request.password());
         return ResponseEntity.ok(ApplicationStatusResponse.from(merchantApplication));
     }
