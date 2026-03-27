@@ -2,6 +2,20 @@ package com.example.pg.payment.domain.aggregate;
 
 import com.example.pg.card_company.domain.aggergate.CardCompany;
 import com.example.pg.payment.domain.vo.PaymentId;
+import com.example.pg.payment.domain.vo.PaymentMerchantId;
+import com.example.pg.payment.domain.vo.PaymentMerchantOrderId;
+import com.example.pg.payment.domain.vo.PaymentOrderName;
+import com.example.pg.payment.domain.vo.PaymentCustomerEmail;
+import com.example.pg.payment.domain.vo.PaymentCustomerName;
+import com.example.pg.payment.domain.vo.PaymentCallbackUrl;
+import com.example.pg.payment.domain.vo.PaymentAmount;
+import com.example.pg.payment.domain.converter.PaymentMerchantIdConverter;
+import com.example.pg.payment.domain.converter.PaymentMerchantOrderIdConverter;
+import com.example.pg.payment.domain.converter.PaymentOrderNameConverter;
+import com.example.pg.payment.domain.converter.PaymentCustomerEmailConverter;
+import com.example.pg.payment.domain.converter.PaymentCustomerNameConverter;
+import com.example.pg.payment.domain.converter.PaymentCallbackUrlConverter;
+import com.example.pg.payment.domain.converter.PaymentAmountConverter;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
@@ -19,48 +33,60 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "payments")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Getter
 public class Payment {
+    @Getter
     @Id
     private String id;
 
     @Column(nullable = false, length = 36, name = "merchant_id")
-    private String merchantId;
+    @Convert(converter = PaymentMerchantIdConverter.class)
+    private PaymentMerchantId merchantId;
 
     @Column(nullable = false)
-    private long amount;
+    @Convert(converter = PaymentAmountConverter.class)
+    private PaymentAmount amount;
 
+    @Getter
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
     @Column(length = 100, name = "merchant_order_id", nullable = false)
-    private String merchantOrderId;
+    @Convert(converter = PaymentMerchantOrderIdConverter.class)
+    private PaymentMerchantOrderId merchantOrderId;
 
     @Column(length = 200, name = "order_name", nullable = false)
-    private String orderName;
+    @Convert(converter = PaymentOrderNameConverter.class)
+    private PaymentOrderName orderName;
 
     @Column(length = 200, name = "customer_email")
-    private String customerEmail;
+    @Convert(converter = PaymentCustomerEmailConverter.class)
+    private PaymentCustomerEmail customerEmail;
 
     @Column(length = 100, name = "customer_name", nullable = false)
-    private String customerName;
+    @Convert(converter = PaymentCustomerNameConverter.class)
+    private PaymentCustomerName customerName;
 
     @Column(length = 500, name = "callback_url", nullable = false)
-    private String callbackUrl;
+    @Convert(converter = PaymentCallbackUrlConverter.class)
+    private PaymentCallbackUrl callbackUrl;
 
+    @Getter
     @Column(length = 50, name = "approval_number")
     private String approvalNumber;
 
+    @Getter
     @Column(length = 100, name = "transaction_id")
     private String transactionId;
 
+    @Getter
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    @Getter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "card_company_id", nullable = false)
     private CardCompany cardCompany;
@@ -76,13 +102,13 @@ public class Payment {
                    String callbackUrl,
                    CardCompany cardCompany) {
         this.id = paymentId.getValue();
-        this.merchantId = merchantId;
-        this.amount = amount;
-        this.merchantOrderId = merchantOrderId;
-        this.orderName = orderName;
-        this.customerEmail = customerEmail;
-        this.customerName = customerName;
-        this.callbackUrl = callbackUrl;
+        this.merchantId = new PaymentMerchantId(merchantId);
+        this.amount = new PaymentAmount(amount);
+        this.merchantOrderId = new PaymentMerchantOrderId(merchantOrderId);
+        this.orderName = new PaymentOrderName(orderName);
+        this.customerEmail = customerEmail == null || customerEmail.isBlank() ? null : new PaymentCustomerEmail(customerEmail);
+        this.customerName = new PaymentCustomerName(customerName);
+        this.callbackUrl = new PaymentCallbackUrl(callbackUrl);
         this.cardCompany = cardCompany;
         this.status = PaymentStatus.READY;
         this.createdAt = LocalDateTime.now();
@@ -134,4 +160,33 @@ public class Payment {
         this.status = PaymentStatus.ABORTED;
         this.updatedAt = LocalDateTime.now();
     }
+
+    public String getMerchantId() {
+        return merchantId == null ? null : merchantId.value();
+    }
+
+    public long getAmount() {
+        return amount == null ? 0L : amount.value();
+    }
+
+    public String getMerchantOrderId() {
+        return merchantOrderId == null ? null : merchantOrderId.value();
+    }
+
+    public String getOrderName() {
+        return orderName == null ? null : orderName.value();
+    }
+
+    public String getCustomerEmail() {
+        return customerEmail == null ? null : customerEmail.value();
+    }
+
+    public String getCustomerName() {
+        return customerName == null ? null : customerName.value();
+    }
+
+    public String getCallbackUrl() {
+        return callbackUrl == null ? null : callbackUrl.value();
+    }
+
 }

@@ -11,17 +11,25 @@ import java.util.UUID;
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class PaymentId {
-    private final String value;
+    private final UUID value;
 
     public static PaymentId generate() {
-        return new PaymentId(UUID.randomUUID().toString());
+        return new PaymentId(UUID.randomUUID());
     }
 
     public static PaymentId from(String value) {
         if (value == null || value.isBlank()) {
             throw new BusinessException(ErrorCode.PAYMENT_ID_INVALID);
         }
-        return new PaymentId(value);
+        try {
+            return new PaymentId(UUID.fromString(value));
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.PAYMENT_ID_INVALID);
+        }
+    }
+
+    public String getValue() {
+        return value.toString();
     }
 
     @Override

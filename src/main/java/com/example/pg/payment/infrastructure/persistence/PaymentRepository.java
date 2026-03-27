@@ -3,6 +3,7 @@ package com.example.pg.payment.infrastructure.persistence;
 import com.example.pg.payment.domain.aggregate.Payment;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.vo.PaymentId;
+import com.example.pg.payment.domain.vo.PaymentMerchantId;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -23,7 +24,7 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
     /**
      * 가맹점별 결제 단건 조회. (GET /payments/{id} - 해당 가맹점 소유만 허용)
      */
-    Optional<Payment> findByMerchantIdAndId(String merchantId, String id);
+    Optional<Payment> findByMerchantIdAndId(PaymentMerchantId merchantId, String id);
 
     /**
      * id + status로 조회. (보상: READY인 결제만 ABORTED 처리)

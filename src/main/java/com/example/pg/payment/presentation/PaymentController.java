@@ -1,8 +1,6 @@
 package com.example.pg.payment.presentation;
 
 import com.example.pg.common.config.filter.MerchantAuthFilter;
-import com.example.pg.common.exception.BusinessException;
-import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.payment.application.PaymentCreationOrchestratorService;
 import com.example.pg.payment.application.PaymentService;
 import com.example.pg.payment.domain.vo.PaymentId;
@@ -110,14 +108,14 @@ public class PaymentController {
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId
     ) {
-        log.debug("[Payment] API getReceiptPdf merchantId={} paymentId={}", merchantId, paymentId);
-        if (paymentId == null || paymentId.isBlank() || ";".equals(paymentId)) {
-            throw new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentId);
-        }
-        byte[] pdf = receiptPdfService.generateByPaymentId(paymentId, merchantId);
+        PaymentId validatedPaymentId = PaymentId.from(paymentId);
+        String paymentIdValue = validatedPaymentId.getValue();
+
+        log.debug("[Payment] API getReceiptPdf merchantId={} paymentId={}", merchantId, paymentIdValue);
+        byte[] pdf = receiptPdfService.generateByPaymentId(paymentIdValue, merchantId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "receipt-" + paymentId + ".pdf");
+        headers.setContentDispositionFormData("attachment", "receipt-" + paymentIdValue + ".pdf");
         headers.setContentLength(pdf.length);
         return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
     }

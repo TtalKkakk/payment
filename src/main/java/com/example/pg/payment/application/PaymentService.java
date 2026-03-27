@@ -2,8 +2,6 @@ package com.example.pg.payment.application;
 
 import com.example.pg.card_company.domain.aggergate.CardCompany;
 import com.example.pg.card_company.presentation.port.CardCompanyPort;
-import com.example.pg.merchant.domain.aggregate.Merchant;
-import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
 import com.example.pg.merchant.presentation.port.MerchantPort;
 import com.example.pg.payment.application.dto.PaymentWebhookDto;
 import com.example.pg.card_company.util.CardCompanyPortRegistry;
@@ -15,6 +13,7 @@ import com.example.pg.payment.domain.event.AuthorizationStartedEvent;
 import com.example.pg.payment.domain.event.PaymentCreatedEvent;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
+import com.example.pg.payment.domain.vo.PaymentMerchantId;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
@@ -62,7 +61,6 @@ public class PaymentService {
                                    String callbackUrl,
                                    String cardCompanyCode) {
         log.debug("[Payment] createPayment start merchantId={} amount={} cardCompanyCode={}", merchantId, amount, cardCompanyCode);
-        validateAmount(amount);
         PaymentId paymentId = PaymentId.generate();
         CardCompany cardCompany = cardCompanyPort.getCardCompanyByCode(cardCompanyCode);
         Payment payment = new Payment(
@@ -91,9 +89,6 @@ public class PaymentService {
     @Transactional
     public void startAuthorization(String paymentIdValue, String billingKey) {
         log.debug("[Payment] startAuthorization start paymentId={}", paymentIdValue);
-        if (billingKey == null || billingKey.isBlank()) {
-            throw new BusinessException(ErrorCode.BILLING_KEY_REQUIRED);
-        }
 
         Payment payment = paymentRepository.load(PaymentId.from(paymentIdValue))
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentIdValue));
@@ -124,14 +119,8 @@ public class PaymentService {
         Payment payment = paymentRepository.load(PaymentId.from(paymentIdValue))
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentIdValue));
 
-        if (!payment.getMerchantId().equals(merchantId)) {
-            throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "해당 결제에 대한 취소 권한이 없습니다.");
-        }
-
-        if (payment.getCardCompany() == null) {
-            throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제에 카드사 정보가 없어 환불할 수 없습니다.");
-        }
         CardCompanyConnect port = portRegistry.getPortOrThrow(payment.getCardCompany().getCode());
+
         if (!port.requestRefund(payment.getId())) {
             throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "환불 요청 실패");
         }
@@ -144,8 +133,11 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public Optional<PaymentDetailResponse> getPayment(String merchantId, String paymentId) {
-        log.debug("[Payment] Query getPayment merchantId={} paymentId={}", merchantId, paymentId);
-        return paymentRepository.findByMerchantIdAndId(merchantId, paymentId)
+        PaymentId validatedPaymentId = PaymentId.from(paymentId);
+        String paymentIdValue = validatedPaymentId.getValue();
+
+        log.debug("[Payment] Query getPayment merchantId={} paymentId={}", merchantId, paymentIdValue);
+        return paymentRepository.findByMerchantIdAndId(new PaymentMerchantId(merchantId), paymentIdValue)
                 .map(PaymentDetailResponse::from);
     }
 
@@ -155,10 +147,6 @@ public class PaymentService {
      */
     public void sendWebhook(Payment payment) {
         String callbackUrl = payment.getCallbackUrl();
-        if (callbackUrl == null || callbackUrl.isBlank()) {
-            log.debug("[Payment] webhook skip no callbackUrl paymentId={}", payment.getId());
-            return;
-        }
 
         String apiSecret = merchantPort.getApiSecret(payment.getMerchantId());
         if (apiSecret == null) {
@@ -175,12 +163,10 @@ public class PaymentService {
         }
 
         String signature = null;
-        if (apiSecret != null) {
-            try {
-                signature = computeHmacSha256(payloadJson, apiSecret);
-            } catch (Exception e) {
-                log.warn("[Payment] webhook signature failed paymentId={}", payment.getId(), e);
-            }
+        try {
+            signature = computeHmacSha256(payloadJson, apiSecret);
+        } catch (Exception e) {
+            log.warn("[Payment] webhook signature failed paymentId={}", payment.getId(), e);
         }
 
         franchiseConnect.send(callbackUrl, payloadJson, signature);
@@ -192,11 +178,5 @@ public class PaymentService {
         mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), HMAC_SHA256));
         byte[] hash = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
         return Base64.getEncoder().encodeToString(hash);
-    }
-
-    private void validateAmount(long amount) {
-        if (amount <= 0) {
-            throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_INVALID, amount);
-        }
     }
 }
