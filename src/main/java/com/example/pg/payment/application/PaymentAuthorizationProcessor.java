@@ -41,9 +41,6 @@ public class PaymentAuthorizationProcessor {
             }
 
             CardCompany cardCompany = payment.getCardCompany();
-            if (cardCompany == null) {
-                throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제에 카드사 정보가 없습니다.");
-            }
             CardCompanyConnect port = portRegistry.getPortOrThrow(cardCompany.getCode());
 
             PaymentApproveResponse result = port.approve(

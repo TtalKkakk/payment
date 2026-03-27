@@ -2,7 +2,7 @@ package com.example.pg.card_company.util;
 
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
-import com.example.pg.payment.presentation.dto.CardCompanyErrorResponse;
+import com.example.pg.card_company.presentation.dto.CardCompanyErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

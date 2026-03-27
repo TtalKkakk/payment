@@ -1,4 +1,4 @@
-package com.example.pg.payment.presentation.dto;
+package com.example.pg.card_company.presentation.dto;
 
 /**
  * 카드사 빌링키 발급 요청 (POST /billing-keys).

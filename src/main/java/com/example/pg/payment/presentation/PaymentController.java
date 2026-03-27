@@ -9,6 +9,7 @@ import com.example.pg.payment.presentation.dto.PaymentDetailResponse;
 import com.example.pg.payment.presentation.dto.CreatePaymentRequest;
 import com.example.pg.payment.presentation.dto.CreatePaymentResponse;
 import com.example.pg.receipt.command.application.ReceiptPdfService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -42,8 +43,10 @@ public class PaymentController {
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId
     ) {
-        log.debug("[Payment] API getPayment merchantId={} paymentId={}", merchantId, paymentId);
-        return paymentService.getPayment(merchantId, paymentId)
+        String paymentIdValue = requireCanonicalPaymentId(paymentId);
+
+        log.debug("[Payment] API getPayment merchantId={} paymentId={}", merchantId, paymentIdValue);
+        return paymentService.getPayment(merchantId, paymentIdValue)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -58,7 +61,7 @@ public class PaymentController {
     @PostMapping
     public ResponseEntity<CreatePaymentResponse> createPayment(
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
-            @RequestBody CreatePaymentRequest request
+            @Valid @RequestBody CreatePaymentRequest request
     ) {
         log.debug("[Payment] API createPayment merchantId={} amount={}", merchantId, request.amount());
         PaymentId paymentId = paymentCreationOrchestratorService.createPaymentAndStartAuthorization(
@@ -77,10 +80,12 @@ public class PaymentController {
     public ResponseEntity<Void> startAuthorization(
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId,
-            @RequestBody AuthorizePaymentRequest request
+            @Valid @RequestBody AuthorizePaymentRequest request
     ) {
-        log.debug("[Payment] API startAuthorization merchantId={} paymentId={}", merchantId, paymentId);
-        paymentService.startAuthorization(paymentId, request.billingKey());
+        String paymentIdValue = requireCanonicalPaymentId(paymentId);
+
+        log.debug("[Payment] API startAuthorization merchantId={} paymentId={}", merchantId, paymentIdValue);
+        paymentService.startAuthorization(paymentIdValue, request.billingKey());
         return ResponseEntity.accepted().build();
     }
 
@@ -94,8 +99,10 @@ public class PaymentController {
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId
     ) {
-        log.debug("[Payment] API cancelPayment merchantId={} paymentId={}", merchantId, paymentId);
-        paymentService.cancelPayment(merchantId, paymentId);
+        String paymentIdValue = requireCanonicalPaymentId(paymentId);
+
+        log.debug("[Payment] API cancelPayment merchantId={} paymentId={}", merchantId, paymentIdValue);
+        paymentService.cancelPayment(merchantId, paymentIdValue);
         return ResponseEntity.noContent().build();
     }
 
@@ -108,8 +115,7 @@ public class PaymentController {
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId
     ) {
-        PaymentId validatedPaymentId = PaymentId.from(paymentId);
-        String paymentIdValue = validatedPaymentId.getValue();
+        String paymentIdValue = requireCanonicalPaymentId(paymentId);
 
         log.debug("[Payment] API getReceiptPdf merchantId={} paymentId={}", merchantId, paymentIdValue);
         byte[] pdf = receiptPdfService.generateByPaymentId(paymentIdValue, merchantId);
@@ -118,5 +124,12 @@ public class PaymentController {
         headers.setContentDispositionFormData("attachment", "receipt-" + paymentIdValue + ".pdf");
         headers.setContentLength(pdf.length);
         return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
+    }
+
+    /**
+     * 경로 변수 paymentId를 VO로 검증(UUID 형식)하고, DB·로그에 쓰기 좋은 canonical 문자열을 반환한다.
+     */
+    private static String requireCanonicalPaymentId(String paymentId) {
+        return PaymentId.from(paymentId).getValue();
     }
 }

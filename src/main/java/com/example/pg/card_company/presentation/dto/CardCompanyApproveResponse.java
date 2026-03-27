@@ -1,4 +1,4 @@
-package com.example.pg.payment.presentation.dto;
+package com.example.pg.card_company.presentation.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

@@ -27,13 +27,6 @@ public class PaymentCreationOrchestratorService {
      * Tx1 실패 시 PAYMENT_CREATION_FAILED, Tx2 실패 시 보상(ABORTED) 후 AUTHORIZATION_START_FAILED.
      */
     public PaymentId createPaymentAndStartAuthorization(String merchantId, CreatePaymentRequest request) {
-        if (request.amount() <= 0) {
-            throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_INVALID, request.amount());
-        }
-        if (request.billingKey() == null || request.billingKey().isBlank()) {
-            throw new BusinessException(ErrorCode.BILLING_KEY_REQUIRED);
-        }
-
         PaymentId paymentId;
         try {
             paymentId = paymentService.createPayment(
