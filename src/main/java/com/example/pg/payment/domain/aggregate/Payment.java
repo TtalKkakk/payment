@@ -27,24 +27,26 @@ public class Payment {
     @Column(nullable = false, length = 36, name = "merchant_id")
     private String merchantId;
 
+    @Column(nullable = false)
     private long amount;
 
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
-    @Column(length = 100, name = "merchant_order_id")
+    @Column(length = 100, name = "merchant_order_id", nullable = false)
     private String merchantOrderId;
 
-    @Column(length = 200, name = "order_name")
+    @Column(length = 200, name = "order_name", nullable = false)
     private String orderName;
 
     @Column(length = 200, name = "customer_email")
     private String customerEmail;
 
-    @Column(length = 100, name = "customer_name")
+    @Column(length = 100, name = "customer_name", nullable = false)
     private String customerName;
 
-    @Column(length = 500, name = "callback_url")
+    @Column(length = 500, name = "callback_url", nullable = false)
     private String callbackUrl;
 
     @Column(length = 50, name = "approval_number")
@@ -60,18 +62,19 @@ public class Payment {
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "card_company_id", nullable = true)
+    @JoinColumn(name = "card_company_id", nullable = false)
     private CardCompany cardCompany;
 
-    public Payment(PaymentId paymentId, String merchantId, long amount,
-                   String merchantOrderId, String orderName, String customerEmail, String customerName,
-                   String callbackUrl) {
-        this(paymentId, merchantId, amount, merchantOrderId, orderName, customerEmail, customerName, callbackUrl, null);
-    }
 
-    public Payment(PaymentId paymentId, String merchantId, long amount,
-                   String merchantOrderId, String orderName, String customerEmail, String customerName,
-                   String callbackUrl, CardCompany cardCompany) {
+    public Payment(PaymentId paymentId,
+                   String merchantId,
+                   long amount,
+                   String merchantOrderId,
+                   String orderName,
+                   String customerEmail,
+                   String customerName,
+                   String callbackUrl,
+                   CardCompany cardCompany) {
         this.id = paymentId.getValue();
         this.merchantId = merchantId;
         this.amount = amount;
@@ -111,7 +114,7 @@ public class Payment {
         if (status != PaymentStatus.AUTHORIZING) {
             throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제 승인 실패 처리 불가: " + status);
         }
-        this.status = PaymentStatus.FAILED;
+        this.status = PaymentStatus.AUTHORIZE_FAILED;
         this.updatedAt = LocalDateTime.now();
     }
 

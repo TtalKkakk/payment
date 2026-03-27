@@ -27,4 +27,6 @@ public interface MerchantPort {
      * 없으면 빈 문자열 반환.
      */
     String getMerchantName(String merchantId);
+
+    String getApiSecret(String merchantId);
 }

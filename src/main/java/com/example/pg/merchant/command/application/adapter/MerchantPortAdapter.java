@@ -57,4 +57,11 @@ public class MerchantPortAdapter implements MerchantPort {
                 .map(Merchant::getName)
                 .orElse("");
     }
+
+    @Override
+    public String getApiSecret(String merchantId) {
+        return merchantRepository.findById(merchantId)
+                .map(Merchant::getApiSecret)
+                .orElse(null);
+    }
 }

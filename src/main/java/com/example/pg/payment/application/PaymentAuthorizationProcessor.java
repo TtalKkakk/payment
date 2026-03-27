@@ -1,4 +1,4 @@
-package com.example.pg.payment.command.application;
+package com.example.pg.payment.application;
 
 import com.example.pg.card_company.util.CardCompanyPortRegistry;
 import com.example.pg.card_company.presentation.CardCompanyConnect;
@@ -64,7 +64,7 @@ public class PaymentAuthorizationProcessor {
                         paymentIdValue, result.approvalNumber(), result.transactionId());
             } else {
                 payment.authorizeFail();
-                eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.FAILED));
+                eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.AUTHORIZE_FAILED));
                 log.info("[Payment] event=Failed paymentId={} resultCode={} message={}",
                         paymentIdValue, result.resultCode(), result.message());
             }

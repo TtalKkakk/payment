@@ -1,4 +1,4 @@
-package com.example.pg.payment.command.application.adapter.dto;
+package com.example.pg.payment.application.adapter.dto;
 
 import com.example.pg.merchant.presentation.port.MerchantPort;
 

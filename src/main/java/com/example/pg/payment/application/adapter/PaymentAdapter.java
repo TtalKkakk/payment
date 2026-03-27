@@ -1,7 +1,7 @@
-package com.example.pg.payment.command.application.adapter;
+package com.example.pg.payment.application.adapter;
 
+import com.example.pg.payment.application.adapter.dto.PaymentSnapshotForReceiptDto;
 import com.example.pg.payment.presentation.port.PaymentPort;
-import com.example.pg.payment.command.application.adapter.dto.PaymentSnapshotForReceiptDto;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
 import lombok.RequiredArgsConstructor;

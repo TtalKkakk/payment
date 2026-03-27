@@ -1,4 +1,4 @@
-package com.example.pg.payment.command.application;
+package com.example.pg.payment.application;
 
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.AuthorizationStartedEvent;
@@ -43,7 +43,7 @@ public class PaymentDomainEventListener {
         log.info("[Payment] event=StatusChanged paymentId={} status={} occurredAt={}",
                 event.paymentId(), event.status(), event.occurredAt());
 
-        if (event.status() != PaymentStatus.FAILED && event.status() != PaymentStatus.CANCELED) {
+        if (event.status() != PaymentStatus.AUTHORIZE_FAILED && event.status() != PaymentStatus.CANCELED) {
             return;
         }
 

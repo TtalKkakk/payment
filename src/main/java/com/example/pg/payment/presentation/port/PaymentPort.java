@@ -1,6 +1,6 @@
 package com.example.pg.payment.presentation.port;
 
-import com.example.pg.payment.command.application.adapter.dto.PaymentSnapshotForReceiptDto;
+import com.example.pg.payment.application.adapter.dto.PaymentSnapshotForReceiptDto;
 
 import java.util.Optional;
 

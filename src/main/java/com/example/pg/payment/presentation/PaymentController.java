@@ -3,9 +3,8 @@ package com.example.pg.payment.presentation;
 import com.example.pg.common.config.filter.MerchantAuthFilter;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
-import com.example.pg.payment.command.application.PaymentCreationOrchestratorService;
-import com.example.pg.payment.command.application.PaymentService;
-import com.example.pg.payment.query.application.PaymentQueryService;
+import com.example.pg.payment.application.PaymentCreationOrchestratorService;
+import com.example.pg.payment.application.PaymentService;
 import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.payment.presentation.dto.AuthorizePaymentRequest;
 import com.example.pg.payment.presentation.dto.PaymentDetailResponse;
@@ -34,7 +33,6 @@ public class PaymentController {
 
     private final PaymentService paymentService;
     private final PaymentCreationOrchestratorService paymentCreationOrchestratorService;
-    private final PaymentQueryService paymentQueryService;
     private final ReceiptPdfService receiptPdfService;
 
     /**
@@ -47,7 +45,7 @@ public class PaymentController {
             @PathVariable String paymentId
     ) {
         log.debug("[Payment] API getPayment merchantId={} paymentId={}", merchantId, paymentId);
-        return paymentQueryService.getPayment(merchantId, paymentId)
+        return paymentService.getPayment(merchantId, paymentId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -67,14 +65,7 @@ public class PaymentController {
         log.debug("[Payment] API createPayment merchantId={} amount={}", merchantId, request.amount());
         PaymentId paymentId = paymentCreationOrchestratorService.createPaymentAndStartAuthorization(
                 merchantId,
-                request.amount(),
-                request.merchantOrderId(),
-                request.orderName(),
-                request.customerEmail(),
-                request.customerName(),
-                request.callbackUrl(),
-                request.billingKey(),
-                request.cardCompanyCode()
+                request
         );
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new CreatePaymentResponse(paymentId.getValue()));

@@ -1,4 +1,4 @@
-package com.example.pg.payment.command.application.dto;
+package com.example.pg.payment.application.dto;
 
 import com.example.pg.payment.domain.aggregate.Payment;
 

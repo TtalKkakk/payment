@@ -1,8 +1,9 @@
-package com.example.pg.payment.command.application;
+package com.example.pg.payment.application;
 
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.payment.domain.vo.PaymentId;
+import com.example.pg.payment.presentation.dto.CreatePaymentRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,30 +26,32 @@ public class PaymentCreationOrchestratorService {
      * 결제하기 단일 API: 트랜잭션 1(결제 생성 READY) + 트랜잭션 2(승인 요청 AUTHORIZING).
      * Tx1 실패 시 PAYMENT_CREATION_FAILED, Tx2 실패 시 보상(ABORTED) 후 AUTHORIZATION_START_FAILED.
      */
-    public PaymentId createPaymentAndStartAuthorization(String merchantId, long amount,
-                                                          String merchantOrderId, String orderName,
-                                                          String customerEmail, String customerName,
-                                                          String callbackUrl, String billingKey,
-                                                          String cardCompanyCode) {
-        if (amount <= 0) {
-            throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_INVALID, amount);
+    public PaymentId createPaymentAndStartAuthorization(String merchantId, CreatePaymentRequest request) {
+        if (request.amount() <= 0) {
+            throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_INVALID, request.amount());
         }
-        if (billingKey == null || billingKey.isBlank()) {
+        if (request.billingKey() == null || request.billingKey().isBlank()) {
             throw new BusinessException(ErrorCode.BILLING_KEY_REQUIRED);
         }
 
         PaymentId paymentId;
         try {
             paymentId = paymentService.createPayment(
-                    merchantId, amount, merchantOrderId, orderName,
-                    customerEmail, customerName, callbackUrl, cardCompanyCode
+                    merchantId,
+                    request.amount(),
+                    request.merchantOrderId(),
+                    request.orderName(),
+                    request.customerEmail(),
+                    request.customerName(),
+                    request.callbackUrl(),
+                    request.cardCompanyCode()
             );
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.PAYMENT_CREATION_FAILED);
         }
 
         try {
-            paymentService.startAuthorization(paymentId.getValue(), billingKey);
+            paymentService.startAuthorization(paymentId.getValue(), request.billingKey());
         } catch (Exception e) {
             paymentService.compensateCreationFailure(paymentId.getValue());
             throw new BusinessException(ErrorCode.AUTHORIZATION_START_FAILED, paymentId.getValue());
