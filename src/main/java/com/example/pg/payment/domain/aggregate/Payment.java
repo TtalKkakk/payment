@@ -83,7 +83,10 @@ public class Payment {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
+    @Getter
     private LocalDateTime createdAt;
+
+    @Getter
     private LocalDateTime updatedAt;
 
     @Getter
