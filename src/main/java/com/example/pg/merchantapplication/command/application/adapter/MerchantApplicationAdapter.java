@@ -1,28 +1,24 @@
 package com.example.pg.merchantapplication.command.application.adapter;
 
+import com.example.pg.common.exception.BusinessException;
+import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.merchant.presentation.port.MerchantPort;
 import com.example.pg.merchant.domain.aggregate.Merchant;
 import com.example.pg.merchant.domain.vo.MerchantName;
-import com.example.pg.merchantapplication.command.application.MerchantApplicationService;
+import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
+import com.example.pg.merchantapplication.infrastructure.persistence.MerchantApplicationRepository;
 import com.example.pg.merchantapplication.presentation.port.MerchantApplicationPort;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class MerchantApplicationPortAdapter implements MerchantApplicationPort {
+@RequiredArgsConstructor
+public class MerchantApplicationAdapter implements MerchantApplicationPort {
 
     private final MerchantPort merchantPort;
-    private final MerchantApplicationService merchantApplicationService;
-
-    public MerchantApplicationPortAdapter(
-            MerchantPort merchantPort,
-            @Lazy MerchantApplicationService merchantApplicationService
-    ) {
-        this.merchantPort = merchantPort;
-        this.merchantApplicationService = merchantApplicationService;
-    }
+    private final MerchantApplicationRepository merchantApplicationRepository;
 
     @Override
     public Merchant createFromApprovedApplication(String applicationId, MerchantName name) {
@@ -32,10 +28,10 @@ public class MerchantApplicationPortAdapter implements MerchantApplicationPort {
 
     @Override
     public void markSubscriptionEnded(String applicationId) {
-        if (applicationId == null || applicationId.isBlank()) {
-            return;
-        }
         log.debug("[MerchantApplication] Port markSubscriptionEnded applicationId={}", applicationId);
-        merchantApplicationService.markSubscriptionEnded(applicationId);
+        MerchantApplication application = merchantApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_APPLICATION_NOT_FOUND, applicationId));
+        application.subscriptionEnded();
+        merchantApplicationRepository.save(application);
     }
 }
