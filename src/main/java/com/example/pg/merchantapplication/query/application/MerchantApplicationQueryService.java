@@ -65,9 +65,6 @@ public class MerchantApplicationQueryService {
     @Transactional(readOnly = true)
     public PagedApplicationsResultDto findPaged(String status, String businessNumber, int pageNumber) {
         log.debug("[MerchantApplication] Query findPaged status={} businessNumber={} page={}", status, businessNumber, pageNumber);
-        if (pageNumber < 0) {
-            pageNumber = 0;
-        }
         SearchType key = SearchType.from(status, businessNumber);
         Pageable pageable = PageRequest.of(pageNumber, DEFAULT_PAGE_SIZE, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<MerchantApplication> page = search(key, status, businessNumber, pageable);

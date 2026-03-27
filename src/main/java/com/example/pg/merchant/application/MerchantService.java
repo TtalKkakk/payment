@@ -7,6 +7,7 @@ import com.example.pg.merchant.domain.event.MerchantDeletedEvent;
 import com.example.pg.merchant.domain.event.MerchantSecretRegeneratedEvent;
 import com.example.pg.merchant.domain.event.MerchantSuspendedEvent;
 import com.example.pg.merchant.domain.vo.ApiKey;
+import com.example.pg.merchant.domain.vo.ApiSecret;
 import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
 import com.example.pg.merchant.presentation.port.MerchantPort;
 import com.example.pg.merchant.application.dto.PagedMerchantsResultDto;
@@ -126,20 +127,13 @@ public class MerchantService {
      */
     @Transactional(readOnly = true)
     public Optional<String> authenticate(String apiKey, String apiSecret) {
-        if (apiKey == null || apiKey.isBlank() || apiSecret == null || apiSecret.isBlank()) {
-            return Optional.empty();
-        }
         log.debug("[Merchant] Query authenticate");
-        final ApiKey key;
-        try {
-            key = new ApiKey(apiKey);
-        } catch (IllegalArgumentException e) {
-            return Optional.empty();
-        }
-        return merchantRepository.findByApiKey(key)
-                .filter(merchant -> merchant.matchesSecret(apiSecret))
-                .filter(Merchant::isActive)
-                .map(Merchant::getId);
+        return ApiKey.tryParse(apiKey)
+                .flatMap(key -> ApiSecret.tryParse(apiSecret)
+                        .flatMap(secret -> merchantRepository.findByApiKey(key)
+                                .filter(merchant -> merchant.matchesSecret(secret.value()))
+                                .filter(Merchant::isActive)
+                                .map(Merchant::getId)));
     }
 
     /**
@@ -148,17 +142,9 @@ public class MerchantService {
      */
     @Transactional(readOnly = true)
     public Optional<Merchant> findActiveByApiKey(String apiKey) {
-        if (apiKey == null || apiKey.isBlank()) {
-            return Optional.empty();
-        }
         log.debug("[Merchant] Query findActiveByApiKey");
-        final ApiKey key;
-        try {
-            key = new ApiKey(apiKey);
-        } catch (IllegalArgumentException e) {
-            return Optional.empty();
-        }
-        return merchantRepository.findByApiKey(key)
+        return ApiKey.tryParse(apiKey)
+                .flatMap(merchantRepository::findByApiKey)
                 .filter(Merchant::isActive);
     }
 
@@ -179,9 +165,6 @@ public class MerchantService {
     @Transactional(readOnly = true)
     public PagedMerchantsResultDto findPaged(String id, int pageNumber) {
         log.debug("[Merchant] Query findPaged id={} page={}", id, pageNumber);
-        if (pageNumber < 0) {
-            pageNumber = 0;
-        }
         Pageable pageable = PageRequest.of(pageNumber, DEFAULT_PAGE_SIZE, Sort.by(Sort.Direction.DESC, "id"));
         Page<Merchant> page = (id != null && !id.isBlank())
                 ? merchantRepository.findByIdContaining(id.trim(), pageable)

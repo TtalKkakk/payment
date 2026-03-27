@@ -161,6 +161,16 @@ public class MerchantApplication {
     }
 
     /**
+     * Merchant 생성/재활성화를 위한 사전 조건 검증.
+     * 신청 상태가 APPROVED가 아니면 예외를 던진다.
+     */
+    public void assertApproved() {
+        if (this.status != MerchantApplicationStatus.APPROVED) {
+            throw new BusinessException(ErrorCode.APPLICATION_NOT_APPROVED);
+        }
+    }
+
+    /**
      * 신청을 취소한다 (심사 전 사용자 철회). 상태를 CANCELLED로 변경.
      * @throws BusinessException APPLICATION_ALREADY_PROCESSED PENDING이 아닌 경우
      */

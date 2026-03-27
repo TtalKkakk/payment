@@ -11,6 +11,7 @@ import com.example.pg.merchant.domain.converter.ApiSecretConverter;
 import com.example.pg.merchant.domain.converter.MerchantNameConverter;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
@@ -26,6 +27,7 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Merchant {
 
+    @Getter
     @Id
     @Column(length = 36)
     private String id;
@@ -43,9 +45,11 @@ public class Merchant {
     private MerchantName name;
 
     /** 신청서(application)와 1:1. null이면 관리자 직접 등록 등 신청 경로가 아닌 경우 */
+    @Getter
     @Column(length = 36, name = "application_id")
     private String applicationId;
 
+    @Getter
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'ACTIVE'")
     private MerchantStatus status;
@@ -123,10 +127,6 @@ public class Merchant {
         return this.apiSecret != null && this.apiSecret.matches(secret);
     }
 
-    public String getId() {
-        return id;
-    }
-
     public String getApiKey() {
         return apiKey == null ? null : apiKey.value();
     }
@@ -139,11 +139,4 @@ public class Merchant {
         return name == null ? null : name.value();
     }
 
-    public String getApplicationId() {
-        return applicationId;
-    }
-
-    public MerchantStatus getStatus() {
-        return status;
-    }
 }

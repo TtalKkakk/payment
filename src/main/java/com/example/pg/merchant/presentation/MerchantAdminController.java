@@ -38,7 +38,7 @@ public class MerchantAdminController {
             Model model
     ) {
         log.debug("[Merchant] Admin list id={} page={}", id, page);
-        PagedMerchantsResultDto result = merchantService.findPaged(id, page);
+        PagedMerchantsResultDto result = merchantService.findPaged(id, Math.max(0, page));
         model.addAttribute("merchants", result.content());
         model.addAttribute("page", result.page());
         model.addAttribute("startPage", result.startPage());

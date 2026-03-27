@@ -43,7 +43,7 @@ public class MerchantApplicationAdminController {
             Model model
     ) {
         log.debug("[MerchantApplication] Admin list status={} businessNumber={} page={}", status, businessNumber, page);
-        PagedApplicationsResultDto result = merchantApplicationQueryService.findPaged(status, businessNumber, page);
+        PagedApplicationsResultDto result = merchantApplicationQueryService.findPaged(status, businessNumber, Math.max(0, page));
         model.addAttribute("page", result.page());
         model.addAttribute("applications", result.content());
         model.addAttribute("status", status);

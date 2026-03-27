@@ -1,6 +1,7 @@
 package com.example.pg.merchant.domain.vo;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -24,6 +25,18 @@ public record ApiSecret(String value) {
     public static ApiSecret ofRandom() {
         String random = UUID.randomUUID().toString().replace("-", "").substring(0, RANDOM_LENGTH);
         return new ApiSecret(PREFIX + random);
+    }
+
+    /**
+     * 외부 입력 문자열을 ApiSecret으로 안전하게 파싱한다.
+     * 형식이 맞지 않으면 예외 대신 Optional.empty()를 반환한다.
+     */
+    public static Optional<ApiSecret> tryParse(String value) {
+        try {
+            return Optional.of(new ApiSecret(value));
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
     }
 
     public boolean matches(String plain) {

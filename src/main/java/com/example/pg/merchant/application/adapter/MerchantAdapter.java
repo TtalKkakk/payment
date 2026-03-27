@@ -8,7 +8,6 @@ import com.example.pg.merchant.domain.enumerate.MerchantStatus;
 import com.example.pg.merchant.domain.vo.MerchantName;
 import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
 import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
-import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
 import com.example.pg.merchantapplication.presentation.port.MerchantApplicationQueryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,9 +30,7 @@ public class MerchantAdapter implements MerchantPort {
         if (!passwordEncoder.matches(rawPassword, merchantApplication.getPasswordHash())) {
             throw new BusinessException(ErrorCode.APPLICATION_PASSWORD_MISMATCH);
         }
-        if (merchantApplication.getStatus() != MerchantApplicationStatus.APPROVED) {
-            throw new BusinessException(ErrorCode.APPLICATION_NOT_APPROVED);
-        }
+        merchantApplication.assertApproved();
         return merchantApplication.getId();
     }
 
