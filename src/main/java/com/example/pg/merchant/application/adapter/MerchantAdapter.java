@@ -7,8 +7,9 @@ import com.example.pg.merchant.domain.aggregate.Merchant;
 import com.example.pg.merchant.domain.enumerate.MerchantStatus;
 import com.example.pg.merchant.domain.vo.MerchantName;
 import com.example.pg.merchant.infrastructure.persistence.MerchantRepository;
+import com.example.pg.merchantapplication.domain.aggregate.MerchantApplication;
 import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
-import com.example.pg.merchantapplication.infrastructure.persistence.MerchantApplicationRepository;
+import com.example.pg.merchantapplication.presentation.port.MerchantApplicationQueryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,17 +18,16 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class MerchantPortAdapter implements MerchantPort {
+public class MerchantAdapter implements MerchantPort {
 
     private final MerchantRepository merchantRepository;
-    private final MerchantApplicationRepository merchantApplicationRepository;
+    private final MerchantApplicationQueryPort merchantApplicationQueryPort;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public String findApprovedApplicationIdByBusinessNumberAndPassword(String businessNumber, String rawPassword) {
         log.debug("[Merchant] Port findApprovedApplicationId businessNumber={}", businessNumber);
-        var merchantApplication = merchantApplicationRepository.findByBusinessNumber(businessNumber)
-                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_PASSWORD_MISMATCH));
+        MerchantApplication merchantApplication = merchantApplicationQueryPort.getByBusinessNumber(businessNumber);
         if (!passwordEncoder.matches(rawPassword, merchantApplication.getPasswordHash())) {
             throw new BusinessException(ErrorCode.APPLICATION_PASSWORD_MISMATCH);
         }
