@@ -11,6 +11,7 @@ import com.example.pg.receipt.infrastructure.persistence.ReceiptRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -65,5 +66,11 @@ public class ReceiptService {
         Receipt saved = receiptRepository.save(receipt);
         log.info("[Receipt] event=Issued paymentId={} receiptId={}", paymentId, saved.getId());
         return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Receipt> getByPaymentId(String paymentId) {
+        log.debug("[Receipt] Query getByPaymentId paymentId={}", paymentId);
+        return receiptRepository.findByPaymentId(paymentId);
     }
 }

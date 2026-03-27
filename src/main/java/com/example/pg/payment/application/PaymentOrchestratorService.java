@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class PaymentCreationOrchestratorService {
+public class PaymentOrchestratorService {
 
     private final PaymentService paymentService;
 

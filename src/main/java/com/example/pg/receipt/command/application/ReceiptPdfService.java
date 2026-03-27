@@ -2,7 +2,7 @@ package com.example.pg.receipt.command.application;
 
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
-import com.example.pg.receipt.command.application.port.ReceiptPdfPort;
+import com.example.pg.receipt.presentation.port.ReceiptPdfPort;
 import com.example.pg.receipt.domain.aggregate.Receipt;
 import com.example.pg.receipt.query.application.ReceiptQueryService;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,6 @@
 package com.example.pg.receipt.infrastructure.adapter;
 
-import com.example.pg.receipt.command.application.port.ReceiptPdfPort;
+import com.example.pg.receipt.presentation.port.ReceiptPdfPort;
 import com.example.pg.receipt.domain.aggregate.Receipt;
 import com.example.pg.receipt.domain.enumerate.ReceiptStatus;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
@@ -21,8 +21,6 @@ import java.util.Locale;
 public class ReceiptPdfAdapter implements ReceiptPdfPort {
 
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.KOREA);
-
-    /** 한글 폰트 (classpath: src/main/resources/fonts/NotoSansKR-Regular.ttf 필요, README 참고) */
     private static final String KOREAN_FONT_FAMILY = "Noto Sans KR";
     private static final String KOREAN_FONT_PATH = "/fonts/NotoSansKR-Regular.ttf";
 

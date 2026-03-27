@@ -1,7 +1,7 @@
 package com.example.pg.payment.presentation;
 
 import com.example.pg.common.config.filter.MerchantAuthFilter;
-import com.example.pg.payment.application.PaymentCreationOrchestratorService;
+import com.example.pg.payment.application.PaymentOrchestratorService;
 import com.example.pg.payment.application.PaymentService;
 import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.payment.presentation.dto.AuthorizePaymentRequest;
@@ -12,9 +12,7 @@ import com.example.pg.receipt.command.application.ReceiptPdfService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,8 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final PaymentCreationOrchestratorService paymentCreationOrchestratorService;
-    private final ReceiptPdfService receiptPdfService;
+    private final PaymentOrchestratorService paymentOrchestratorService;
 
     /**
      * 결제 단건 조회.
@@ -43,7 +40,7 @@ public class PaymentController {
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId
     ) {
-        String paymentIdValue = requireCanonicalPaymentId(paymentId);
+        String paymentIdValue = PaymentId.from(paymentId).getValue();
 
         log.debug("[Payment] API getPayment merchantId={} paymentId={}", merchantId, paymentIdValue);
         return paymentService.getPayment(merchantId, paymentIdValue)
@@ -64,7 +61,7 @@ public class PaymentController {
             @Valid @RequestBody CreatePaymentRequest request
     ) {
         log.debug("[Payment] API createPayment merchantId={} amount={}", merchantId, request.amount());
-        PaymentId paymentId = paymentCreationOrchestratorService.createPaymentAndStartAuthorization(
+        PaymentId paymentId = paymentOrchestratorService.createPaymentAndStartAuthorization(
                 merchantId,
                 request
         );
@@ -82,7 +79,7 @@ public class PaymentController {
             @PathVariable String paymentId,
             @Valid @RequestBody AuthorizePaymentRequest request
     ) {
-        String paymentIdValue = requireCanonicalPaymentId(paymentId);
+        String paymentIdValue = PaymentId.from(paymentId).getValue();
 
         log.debug("[Payment] API startAuthorization merchantId={} paymentId={}", merchantId, paymentIdValue);
         paymentService.startAuthorization(paymentIdValue, request.billingKey());
@@ -99,37 +96,10 @@ public class PaymentController {
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId
     ) {
-        String paymentIdValue = requireCanonicalPaymentId(paymentId);
+        String paymentIdValue = PaymentId.from(paymentId).getValue();
 
         log.debug("[Payment] API cancelPayment merchantId={} paymentId={}", merchantId, paymentIdValue);
         paymentService.cancelPayment(merchantId, paymentIdValue);
         return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * 해당 결제의 영수증 PDF 다운로드.
-     * 해당 가맹점의 결제에 대해서만 발급 가능.
-     */
-    @GetMapping("/{paymentId}/receipt/pdf")
-    public ResponseEntity<byte[]> getReceiptPdf(
-            @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
-            @PathVariable String paymentId
-    ) {
-        String paymentIdValue = requireCanonicalPaymentId(paymentId);
-
-        log.debug("[Payment] API getReceiptPdf merchantId={} paymentId={}", merchantId, paymentIdValue);
-        byte[] pdf = receiptPdfService.generateByPaymentId(paymentIdValue, merchantId);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "receipt-" + paymentIdValue + ".pdf");
-        headers.setContentLength(pdf.length);
-        return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
-    }
-
-    /**
-     * 경로 변수 paymentId를 VO로 검증(UUID 형식)하고, DB·로그에 쓰기 좋은 canonical 문자열을 반환한다.
-     */
-    private static String requireCanonicalPaymentId(String paymentId) {
-        return PaymentId.from(paymentId).getValue();
     }
 }

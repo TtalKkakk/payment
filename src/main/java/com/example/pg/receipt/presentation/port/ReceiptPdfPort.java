@@ -1,4 +1,4 @@
-package com.example.pg.receipt.command.application.port;
+package com.example.pg.receipt.presentation.port;
 
 import com.example.pg.receipt.domain.aggregate.Receipt;
 

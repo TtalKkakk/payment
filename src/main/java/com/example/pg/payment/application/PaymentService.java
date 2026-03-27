@@ -3,6 +3,7 @@ package com.example.pg.payment.application;
 import com.example.pg.card_company.domain.aggergate.CardCompany;
 import com.example.pg.card_company.presentation.port.CardCompanyPort;
 import com.example.pg.merchant.presentation.port.MerchantPort;
+import com.example.pg.payment.application.adapter.dto.PaymentSnapshotForReceiptDto;
 import com.example.pg.payment.application.dto.PaymentWebhookDto;
 import com.example.pg.card_company.util.CardCompanyPortRegistry;
 import com.example.pg.card_company.presentation.CardCompanyConnect;
@@ -141,6 +142,27 @@ public class PaymentService {
                 .map(PaymentDetailResponse::from);
     }
 
+    @Transactional(readOnly = true)
+    public boolean existsPayment(String paymentId) {
+        return paymentRepository.existsById(paymentId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<PaymentSnapshotForReceiptDto> findAuthorizedPayment(String paymentId) {
+        return paymentRepository.findById(paymentId)
+                .filter(p -> p.getStatus() == PaymentStatus.AUTHORIZED)
+                .map(p -> new PaymentSnapshotForReceiptDto(
+                        p.getId(),
+                        p.getMerchantId(),
+                        p.getAmount(),
+                        p.getOrderName(),
+                        p.getMerchantOrderId(),
+                        p.getCustomerName(),
+                        p.getApprovalNumber(),
+                        p.getTransactionId(),
+                        p.getApprovedAt()
+                ));
+    }
     /**
      * 결제 상태 변경 결과를 가맹점 callbackUrl로 웹훅 발송.
      * callbackUrl이 없으면 발송하지 않는다. 서명은 가맹점 apiSecret으로 생성한다.
