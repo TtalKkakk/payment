@@ -2,7 +2,12 @@ package com.example.pg.merchantapplication.domain.aggregate;
 
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
+import com.example.pg.merchant.domain.converter.MerchantNameConverter;
 import com.example.pg.merchant.domain.vo.MerchantName;
+import com.example.pg.merchantapplication.domain.converter.BusinessNumberConverter;
+import com.example.pg.merchantapplication.domain.converter.ContactEmailConverter;
+import com.example.pg.merchantapplication.domain.converter.ContactPhoneConverter;
+import com.example.pg.merchantapplication.domain.converter.PasswordHashConverter;
 import com.example.pg.merchantapplication.domain.enumerate.MerchantApplicationStatus;
 import com.example.pg.merchantapplication.domain.vo.BusinessNumber;
 import com.example.pg.merchantapplication.domain.vo.ContactEmail;
@@ -21,58 +26,69 @@ import java.util.UUID;
         name = "merchant_applications",
         uniqueConstraints = @UniqueConstraint(columnNames = "business_number")
 )
-@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MerchantApplication {
 
     public static final int REJECT_REASON_MAX_LENGTH = 500;
 
+    @Getter
     @Id
     @Column(length = 36)
     private String id;
 
     @Column(nullable = false, length = 100)
-    private String name;
+    @Convert(converter = MerchantNameConverter.class)
+    private MerchantName name;
 
     @Column(nullable = false, length = 20, name = "business_number")
-    private String businessNumber;
+    @Convert(converter = BusinessNumberConverter.class)
+    private BusinessNumber businessNumber;
 
     @Column(nullable = false, length = 50, name = "phone")
-    private String contactPhone;
+    @Convert(converter = ContactPhoneConverter.class)
+    private ContactPhone contactPhone;
 
     @Column(nullable = false, length = 100, name = "email")
-    private String contactEmail;
+    @Convert(converter = ContactEmailConverter.class)
+    private ContactEmail contactEmail;
 
+    @Getter
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private MerchantApplicationStatus status;
 
+    @Getter
     @Column(length = 500, name = "reject_reason")
     private String rejectReason;
 
     @Column(nullable = false, length = 60, name = "password_hash")
-    private String passwordHash;
+    @Convert(converter = PasswordHashConverter.class)
+    private PasswordHash passwordHash;
 
+    @Getter
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Getter
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
 
+    @Getter
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Getter
     @Version
     @Column(name = "version")
     private Long version;
 
     public MerchantApplication(
             String id,
-            String name,
-            String businessNumber,
-            String contactPhone,
-            String contactEmail,
-            String passwordHash
+            MerchantName name,
+            BusinessNumber businessNumber,
+            ContactPhone contactPhone,
+            ContactEmail contactEmail,
+            PasswordHash passwordHash
     ) {
         this.id = id;
         this.name = name;
@@ -113,14 +129,7 @@ public class MerchantApplication {
             ContactEmail contactEmail,
             PasswordHash passwordHash
     ) {
-        return new MerchantApplication(
-                null,
-                name.value(),
-                businessNumber.value(),
-                contactPhone.value(),
-                contactEmail.value(),
-                passwordHash.value()
-        );
+        return new MerchantApplication(null, name, businessNumber, contactPhone, contactEmail, passwordHash);
     }
 
     /**
@@ -209,21 +218,44 @@ public class MerchantApplication {
                 && this.status != MerchantApplicationStatus.REJECTED) {
             throw new BusinessException(ErrorCode.APPLICATION_ALREADY_PROCESSED, this.status.name());
         }
-        this.name = name.value();
-        this.contactPhone = contactPhone.value();
-        this.contactEmail = contactEmail.value();
-        this.passwordHash = passwordHash.value();
+        this.name = name;
+        this.contactPhone = contactPhone;
+        this.contactEmail = contactEmail;
+        this.passwordHash = passwordHash;
         this.status = MerchantApplicationStatus.PENDING;
         this.rejectReason = null;
         this.processedAt = null;
         this.updatedAt = LocalDateTime.now();
     }
 
-    /** 승인 시 Merchant 생성에 전달할 이름. Merchant.name = MerchantApplication.name 을 설계상 보장하기 위해 동일 타입(MerchantName)을 반환한다. */
+    /** Thymeleaf·이벤트·API 응답용. */
+    public String getName() {
+        return name == null ? null : name.value();
+    }
+
+    public String getBusinessNumber() {
+        return businessNumber == null ? null : businessNumber.value();
+    }
+
+    public String getContactPhone() {
+        return contactPhone == null ? null : contactPhone.value();
+    }
+
+    public String getContactEmail() {
+        return contactEmail == null ? null : contactEmail.value();
+    }
+
+    public String getPasswordHash() {
+        return passwordHash == null ? null : passwordHash.value();
+    }
+
+    /**
+     * 승인 시 Merchant 생성에 전달할 이름. Merchant.name = MerchantApplication.name 을 설계상 보장하기 위해 동일 타입(MerchantName)을 반환한다.
+     */
     public MerchantName getMerchantName() {
-        if (this.name == null || this.name.isBlank()) {
+        if (this.name == null) {
             throw new IllegalStateException("merchant application name must be set");
         }
-        return MerchantName.of(this.name);
+        return this.name;
     }
 }

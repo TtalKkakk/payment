@@ -98,7 +98,7 @@ public class MerchantService {
         Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_NOT_FOUND, merchantId));
         merchant.activate();
-        merchantRepository.save(merchant);
+        merchantRepository.save(merchant); // 뺄게요
         applicationEventPublisher.publishEvent(MerchantActivatedEvent.from(merchantId, merchant.getName()));
         log.debug("[Merchant] activateMerchant committed merchantId={}", merchantId);
     }
@@ -113,7 +113,7 @@ public class MerchantService {
         Merchant merchant = merchantRepository.findById(merchantId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MERCHANT_NOT_FOUND, merchantId));
         merchant.withdrawFromSuspended();
-        merchantRepository.save(merchant);
+        merchantRepository.save(merchant); // 뺄게요
 
         merchantApplicationPort.markSubscriptionEnded(merchant.getApplicationId());
 
