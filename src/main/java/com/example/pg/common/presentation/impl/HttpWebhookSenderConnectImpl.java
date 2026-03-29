@@ -1,7 +1,7 @@
-package com.example.pg.payment.presentation.impl;
+package com.example.pg.common.presentation.impl;
 
 import com.example.pg.common.util.HttpOutbound;
-import com.example.pg.payment.presentation.FranchiseConnect;
+import com.example.pg.common.presentation.FranchiseConnect;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

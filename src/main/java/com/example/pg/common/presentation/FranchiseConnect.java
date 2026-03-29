@@ -1,4 +1,4 @@
-package com.example.pg.payment.presentation;
+package com.example.pg.common.presentation;
 
 /**
  * 웹훅 발송 아웃바운드 포트.

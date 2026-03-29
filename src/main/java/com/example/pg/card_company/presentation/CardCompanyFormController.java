@@ -1,5 +1,6 @@
 package com.example.pg.card_company.presentation;
 
+import com.example.pg.card_company.application.BillingKeyWebhookNotifier;
 import com.example.pg.card_company.application.CardCompanyService;
 import com.example.pg.card_company.application.dto.AuthCodeSession;
 import com.example.pg.card_company.application.dto.CardRegisterSession;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CardCompanyFormController {
     private final CardCompanyService cardCompanyService;
+    private final BillingKeyWebhookNotifier billingKeyWebhookNotifier;
 
     /**
      * 카드사 선택 페이지. returnUrl은 가맹점이 카드 등록 완료 후 받을 URL(쿼리 파라미터).
@@ -103,6 +105,14 @@ public class CardCompanyFormController {
         cardCompanyService.removeCardRegisterSession(sessionToken);
 
         String returnUrl = session.returnUrl();
+
+        // 웹훅으로 빌링키를 넘기는 설계: app.billing-key.webhook.enabled=true 일 때만 POST (returnUrl을 웹훅 URL로 쓰는 임시 매핑 — 전용 URL 필드 분리 권장)
+        billingKeyWebhookNotifier.notifyBillingKeyRegisteredIfEnabled(
+                session.merchantId(),
+                returnUrl,
+                session.cardCompanyCode(),
+                response
+        );
 
         // billingKeyToken을 브라우저에 노출하지 않기 위해 1회용 code만 전달한다.
         // 가맹점 서버는 /api/billing-keys/exchange로 code를 보내 billingKeyToken을 교환한다.

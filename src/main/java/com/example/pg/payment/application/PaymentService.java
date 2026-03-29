@@ -7,7 +7,7 @@ import com.example.pg.payment.application.adapter.dto.PaymentSnapshotForReceiptD
 import com.example.pg.payment.application.dto.PaymentWebhookDto;
 import com.example.pg.card_company.util.CardCompanyPortRegistry;
 import com.example.pg.card_company.presentation.CardCompanyConnect;
-import com.example.pg.payment.presentation.FranchiseConnect;
+import com.example.pg.common.presentation.FranchiseConnect;
 import com.example.pg.payment.domain.aggregate.Payment;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.AuthorizationStartedEvent;
