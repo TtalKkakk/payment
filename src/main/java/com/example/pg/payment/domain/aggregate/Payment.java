@@ -147,11 +147,32 @@ public class Payment {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void cancel() {
-        if (status != PaymentStatus.AUTHORIZED) {
-            throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제 취소 불가: " + status);
+    /**
+     * 환불(취소) 요청. AUTHORIZED 또는 CANCEL_FAILED(재시도) → CANCELLING.
+     */
+    public void startCancellation() {
+        if (status != PaymentStatus.AUTHORIZED && status != PaymentStatus.CANCEL_FAILED) {
+            throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제 취소 시작 불가: " + status);
+        }
+        this.status = PaymentStatus.CANCELLING;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /** 카드사 환불 성공 반영. CANCELLING → CANCELED */
+    public void completeCancellation() {
+        if (status != PaymentStatus.CANCELLING) {
+            throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제 취소 완료 처리 불가: " + status);
         }
         this.status = PaymentStatus.CANCELED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /** 카드사 환불 실패 시 CANCELLING → CANCEL_FAILED */
+    public void markCancellationFailed() {
+        if (status != PaymentStatus.CANCELLING) {
+            throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "취소 실패 처리 불가: " + status);
+        }
+        this.status = PaymentStatus.CANCEL_FAILED;
         this.updatedAt = LocalDateTime.now();
     }
 

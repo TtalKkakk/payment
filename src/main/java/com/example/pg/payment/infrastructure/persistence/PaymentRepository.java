@@ -15,7 +15,7 @@ import java.util.Optional;
 public interface PaymentRepository extends JpaRepository<Payment, String> {
 
     /**
-     * paymentId로 단건 조회. (startAuthorization, cancelPayment, processAuthorization, 웹훅 발송 등)
+     * paymentId로 단건 조회. (startAuthorization, startCancellation, processAuthorization, 웹훅 발송 등)
      */
     default Optional<Payment> load(PaymentId paymentId) {
         return findById(paymentId.getValue());

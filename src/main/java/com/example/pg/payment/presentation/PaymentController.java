@@ -86,9 +86,9 @@ public class PaymentController {
     }
 
     /**
-     * 결제 취소(환불)를 요청한다.
-     * AUTHORIZED 상태의 결제에 대해서만 취소 가능하다.
-     * 해당 가맹점의 결제만 취소할 수 있다.
+     * 결제 취소(환불)를 시작한다.
+     * AUTHORIZED 또는 CANCEL_FAILED → CANCELLING 후 비동기 환불. 성공 시 CANCELED·웹훅, 실패 시 CANCEL_FAILED·웹훅.
+     * 승인 요청과 동일하게 HTTP 202로 수락만 하며, 최종 결과는 폴링·웹훅으로 확인한다.
      */
     @PostMapping("/{paymentId}/cancel")
     public ResponseEntity<Void> cancelPayment(
@@ -98,7 +98,7 @@ public class PaymentController {
         String paymentIdValue = PaymentId.from(paymentId).getValue();
 
         log.debug("[Payment] API cancelPayment merchantId={} paymentId={}", merchantId, paymentIdValue);
-        paymentService.cancelPayment(merchantId, paymentIdValue);
-        return ResponseEntity.noContent().build();
+        paymentService.startCancellation(merchantId, paymentIdValue);
+        return ResponseEntity.accepted().build();
     }
 }

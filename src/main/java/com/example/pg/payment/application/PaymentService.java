@@ -5,14 +5,12 @@ import com.example.pg.card_company.presentation.port.CardCompanyPort;
 import com.example.pg.merchant.presentation.port.MerchantPort;
 import com.example.pg.payment.application.adapter.dto.PaymentSnapshotForReceiptDto;
 import com.example.pg.payment.application.dto.PaymentWebhookDto;
-import com.example.pg.card_company.util.CardCompanyPortRegistry;
-import com.example.pg.card_company.presentation.CardCompanyConnect;
 import com.example.pg.common.presentation.FranchiseConnect;
 import com.example.pg.payment.domain.aggregate.Payment;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.AuthorizationStartedEvent;
+import com.example.pg.payment.domain.event.CancellationStartedEvent;
 import com.example.pg.payment.domain.event.PaymentCreatedEvent;
-import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.payment.domain.vo.PaymentMerchantId;
 import com.example.pg.common.exception.BusinessException;
@@ -41,7 +39,6 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final CardCompanyPort cardCompanyPort;
-    private final CardCompanyPortRegistry portRegistry;
     private final ApplicationEventPublisher eventPublisher;
     private final MerchantPort merchantPort;
     private final ObjectMapper objectMapper;
@@ -110,26 +107,23 @@ public class PaymentService {
     }
 
     /**
-     * 결제 취소(환불)를 요청한다.
-     * 카드사에 환불 요청 후 승인되면 status를 CANCELED로 변경하고 웹훅을 발송한다.
-     * 해당 가맹점의 결제만 취소할 수 있다.
+     * 결제 취소(환불)를 시작한다. AUTHORIZED → CANCELLING 후 커밋되면 비동기로 카드사 환불 요청을 수행한다.
+     * 성공 시 CANCELED 및 웹훅, 실패 시 CANCEL_FAILED 및 웹훅. CANCEL_FAILED인 결제는 취소 API로 재시도 가능.
      */
     @Transactional
-    public void cancelPayment(String merchantId, String paymentIdValue) {
-        log.debug("[Payment] cancelPayment start merchantId={} paymentId={}", merchantId, paymentIdValue);
+    public void startCancellation(String merchantId, String paymentIdValue) {
+        log.debug("[Payment] startCancellation merchantId={} paymentId={}", merchantId, paymentIdValue);
         Payment payment = paymentRepository.load(PaymentId.from(paymentIdValue))
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentIdValue));
 
-        CardCompanyConnect port = portRegistry.getPortOrThrow(payment.getCardCompany().getCode());
-
-        if (!port.requestRefund(payment.getId())) {
-            throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "환불 요청 실패");
+        if (!merchantId.equals(payment.getMerchantId())) {
+            throw new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentIdValue);
         }
 
-        payment.cancel();
+        payment.startCancellation();
 
-        eventPublisher.publishEvent(PaymentStatusChangedEvent.from(payment.getId(), PaymentStatus.CANCELED));
-        log.debug("[Payment] cancelPayment committed paymentId={}", paymentIdValue);
+        eventPublisher.publishEvent(CancellationStartedEvent.from(paymentIdValue));
+        log.debug("[Payment] startCancellation committed paymentId={}", paymentIdValue);
     }
 
     @Transactional(readOnly = true)

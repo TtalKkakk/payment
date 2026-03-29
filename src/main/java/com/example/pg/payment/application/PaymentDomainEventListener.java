@@ -2,6 +2,7 @@ package com.example.pg.payment.application;
 
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.AuthorizationStartedEvent;
+import com.example.pg.payment.domain.event.CancellationStartedEvent;
 import com.example.pg.payment.domain.event.PaymentCreatedEvent;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
@@ -25,11 +26,18 @@ public class PaymentDomainEventListener {
     private final PaymentRepository paymentRepository;
     private final PaymentService paymentService;
     private final PaymentAuthorizationProcessor paymentAuthorizationProcessor;
+    private final PaymentRefundProcessor paymentRefundProcessor;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onAuthorizationStarted(AuthorizationStartedEvent event) {
         log.info("[Payment] event=Started Authorization paymentId={}", event.paymentId());
         paymentAuthorizationProcessor.processAuthorization(event.paymentId(), event.billingKey());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onCancellationStarted(CancellationStartedEvent event) {
+        log.info("[Payment] event=Started Cancellation paymentId={}", event.paymentId());
+        paymentRefundProcessor.processRefund(event.paymentId());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -43,7 +51,7 @@ public class PaymentDomainEventListener {
         log.info("[Payment] event=StatusChanged paymentId={} status={} occurredAt={}",
                 event.paymentId(), event.status(), event.occurredAt());
 
-        if (event.status() != PaymentStatus.AUTHORIZE_FAILED && event.status() != PaymentStatus.CANCELED) {
+        if (event.status() != PaymentStatus.AUTHORIZE_FAILED && event.status() != PaymentStatus.CANCEL_FAILED) {
             return;
         }
 
