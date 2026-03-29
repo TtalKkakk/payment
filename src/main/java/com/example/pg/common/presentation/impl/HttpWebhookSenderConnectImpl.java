@@ -1,6 +1,7 @@
 package com.example.pg.common.presentation.impl;
 
-import com.example.pg.common.util.HttpOutbound;
+import com.example.pg.common.webhook.WebhookDeliveryExhaustedException;
+import com.example.pg.common.webhook.WebhookDeliveryExecutor;
 import com.example.pg.common.presentation.FranchiseConnect;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +11,7 @@ import java.util.Map;
 
 /**
  * 웹훅 발송 HTTP 어댑터.
- * 공통 HttpOutboundPort를 사용해 POST로 JSON 본문을 보내고, 서명이 있으면 X-PG-Signature 헤더에 설정한다.
+ * {@link WebhookDeliveryExecutor}로 POST하며, 재시도 정책은 결제·빌링키 등 모든 {@link FranchiseConnect} 호출에 공통 적용된다.
  */
 @Slf4j
 @Component
@@ -19,7 +20,7 @@ public class HttpWebhookSenderConnectImpl implements FranchiseConnect {
 
     private static final String SIGNATURE_HEADER = "X-PG-Signature";
 
-    private final HttpOutbound httpOutbound;
+    private final WebhookDeliveryExecutor webhookDeliveryExecutor;
 
     @Override
     public void send(String url, String bodyJson, String signatureValue) {
@@ -28,10 +29,12 @@ public class HttpWebhookSenderConnectImpl implements FranchiseConnect {
             extraHeaders = Map.of(SIGNATURE_HEADER, signatureValue);
         }
         try {
-            httpOutbound.post(url, bodyJson, extraHeaders);
-            log.info("[Payment] webhook delivery done url={}", url);
+            webhookDeliveryExecutor.deliverPost(url, bodyJson, extraHeaders);
+            log.info("[Webhook] delivery done url={}", url);
+        } catch (WebhookDeliveryExhaustedException e) {
+            log.error("[Webhook] delivery failed after retries url={}", url, e);
         } catch (Exception e) {
-            log.error("[Payment] webhook delivery failed url={}", url, e);
+            log.error("[Webhook] delivery failed (no retry or non-retryable) url={}", url, e);
         }
     }
 }
