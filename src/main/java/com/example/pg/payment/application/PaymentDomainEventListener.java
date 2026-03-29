@@ -51,7 +51,11 @@ public class PaymentDomainEventListener {
         log.info("[Payment] event=StatusChanged paymentId={} status={} occurredAt={}",
                 event.paymentId(), event.status(), event.occurredAt());
 
-        if (event.status() != PaymentStatus.AUTHORIZE_FAILED && event.status() != PaymentStatus.CANCEL_FAILED) {
+        if (event.status() != PaymentStatus.AUTHORIZE_FAILED &&
+                event.status() != PaymentStatus.CANCEL_FAILED &&
+                event.status() != PaymentStatus.AUTHORIZED &&
+                event.status() != PaymentStatus.CANCELED
+        ) {
             return;
         }
 
