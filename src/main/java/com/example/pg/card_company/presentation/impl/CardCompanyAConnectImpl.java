@@ -44,14 +44,14 @@ public class CardCompanyAConnectImpl implements CardCompanyConnect {
                     url, request, CardCompanyApproveResponse.class, "결제 승인");
             return toApproveResult(body);
         } catch (Exception e) {
-            log.warn("[Payment] CardCompany approve failed paymentId={} url={}", paymentId, url, e);
+            log.warn("[CardCompany] CardCompany approve failed paymentId={} url={}", paymentId, url, e);
             return PaymentApproveResponse.failure(paymentId, "E999", e.getMessage());
         }
     }
 
     @Override
     public RegistrationSessionResponse createRegistrationSession(String returnUrl) {
-        log.debug("[Payment] request to card company for registration form");
+        log.debug("[CardCompany] request to card company for registration form");
         String url = buildUrl(SESSION_PATH);
         SessionRequest request = new SessionRequest(returnUrl);
         SessionResponse body = apiTemplate.postForObject(url, request, SessionResponse.class, "등록 페이지 생성");
@@ -60,7 +60,7 @@ public class CardCompanyAConnectImpl implements CardCompanyConnect {
 
     @Override
     public BillingKeyTokenResponse issueBillingKey(String authCode) {
-        log.debug("[Payment] request to card company for billing key");
+        log.debug("[CardCompany] request to card company for billing key");
         String url = buildUrl(BILLING_KEY_PATH);
         BillingKeyRequest request = new BillingKeyRequest(authCode);
         BillingKeyResponse body = apiTemplate.postForObject(url, request, BillingKeyResponse.class, "빌링키 발급");
@@ -81,7 +81,7 @@ public class CardCompanyAConnectImpl implements CardCompanyConnect {
                     url, request, RefundResponse.class, "환불");
             return body != null && body.success();
         } catch (Exception e) {
-            log.warn("[Payment] CardCompany refund failed paymentId={} url={}", paymentId, url, e);
+            log.warn("[CardCompany] CardCompany refund failed paymentId={} url={}", paymentId, url, e);
             return false;
         }
     }

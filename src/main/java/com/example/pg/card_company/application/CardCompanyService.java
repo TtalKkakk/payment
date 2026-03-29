@@ -82,13 +82,13 @@ public class CardCompanyService {
 
     public CardRegisterSession getCardRegisterSession(String sessionToken){
         log.debug("[CardCompany] get CardRegisterSession key = {} in sessionStore", sessionToken);
-        return cardRegisterSessionSessionStore.get(sessionToken, CardRegisterSession.class)
+        return cardRegisterSessionSessionStore.get(SESSION_PREFIX + sessionToken, CardRegisterSession.class)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CARD_REGISTER_SESSION_INVALID, sessionToken));
     }
 
     public void removeCardRegisterSession(String sessionToken){
         log.debug("[CardCompany] remove CardRegisterSession key = {} in sessionStore", sessionToken);
-        cardRegisterSessionSessionStore.remove(sessionToken);
+        cardRegisterSessionSessionStore.remove(SESSION_PREFIX + sessionToken);
     }
 
     public String issueCode(AuthCodeSession session) {
@@ -100,7 +100,7 @@ public class CardCompanyService {
     }
 
     public BillingKeyExchangeResponse getBillingKeyAndCardInfo(BillingKeyExchangeRequest request){
-        AuthCodeSession session = codeSessionStore.get(request.code(), AuthCodeSession.class)
+        AuthCodeSession session = codeSessionStore.get(KEY_PREFIX + request.code(), AuthCodeSession.class)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BILLING_KEY_EXCHANGE_CODE_INVALID));
         log.info("[CardCompany] get billing key with card info {}, {}, {} in sessionStore",
                 session.cardCompanyCode(),

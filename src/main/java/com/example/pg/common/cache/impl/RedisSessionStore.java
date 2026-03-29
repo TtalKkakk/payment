@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Redis 기반 카드 등록 세션 저장소.
@@ -35,7 +36,8 @@ public class RedisSessionStore<T> implements SessionStore<T> {
         ttl = defenceTTLIfNegative(ttl);
         try {
             String json = objectMapper.writeValueAsString(cache);
-            redisTemplate.opsForValue().set(key, json, ttl);
+            // set(key, value, long) 단독은 SETRANGE(offset) — ttl(초)를 넘기면 offset으로 오인되어 앞이 널 패딩됨
+            redisTemplate.opsForValue().set(key, json, ttl, TimeUnit.SECONDS);
             return id;
         } catch (Exception e) {
             log.error("[Util] sessionStore 저장 실패", e);
@@ -55,7 +57,7 @@ public class RedisSessionStore<T> implements SessionStore<T> {
         try {
             return Optional.of(objectMapper.readValue(json, type));
         } catch (Exception e) {
-            log.warn("[Payment] CardRegisterSession 역직렬화 실패 token={}", key, e);
+            log.warn("[Util] 역직렬화 실패 token={}", key, e);
             return Optional.empty();
         }
     }
