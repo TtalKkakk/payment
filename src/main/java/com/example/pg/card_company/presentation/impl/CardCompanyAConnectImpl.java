@@ -11,8 +11,8 @@ import com.example.pg.card_company.presentation.dto.BillingKeyTokenResponse;
 import com.example.pg.card_company.presentation.dto.RegistrationSessionResponse;
 import com.example.pg.card_company.presentation.dto.CardCompanyApproveRequest;
 import com.example.pg.card_company.presentation.dto.CardCompanyApproveResponse;
+import com.example.pg.payment.presentation.dto.PaymentRefundResponse;
 import com.example.pg.payment.presentation.dto.RefundRequest;
-import com.example.pg.payment.presentation.dto.RefundResponse;
 import com.example.pg.card_company.util.CardCompanyApiTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,17 +73,38 @@ public class CardCompanyAConnectImpl implements CardCompanyConnect {
     }
 
     @Override
-    public boolean requestRefund(String paymentId) {
+    public PaymentRefundResponse requestRefund(String paymentId) {
         String url = buildUrl(REFUND_PATH);
         RefundRequest request = new RefundRequest(paymentId);
         try {
-            RefundResponse body = apiTemplate.postForObject(
-                    url, request, RefundResponse.class, "환불");
-            return body != null && body.success();
+            PaymentRefundResponse body = apiTemplate.postForObject(
+                    url, request, PaymentRefundResponse.class, "환불");
+            if (body == null) {
+                return PaymentRefundResponse.failure(paymentId, "E999", "카드사 응답이 비어 있습니다.");
+            }
+            return toRefundResult(body);
         } catch (Exception e) {
             log.warn("[CardCompany] CardCompany refund failed paymentId={} url={}", paymentId, url, e);
-            return false;
+            return PaymentRefundResponse.failure(paymentId, "E999", e.getMessage());
         }
+    }
+
+    private PaymentRefundResponse toRefundResult(PaymentRefundResponse body) {
+        if (body.success()) {
+            LocalDateTime at = body.approvedAt() != null ? body.approvedAt() : LocalDateTime.now();
+            return PaymentRefundResponse.success(
+                    body.paymentId() != null ? body.paymentId() : "",
+                    body.approvalNumber(),
+                    body.transactionId(),
+                    at,
+                    body.amount()
+            );
+        }
+        return PaymentRefundResponse.failure(
+                body.paymentId() != null ? body.paymentId() : "",
+                body.resultCode() != null ? body.resultCode() : "E999",
+                body.message()
+        );
     }
 
     private String buildUrl(String path) {

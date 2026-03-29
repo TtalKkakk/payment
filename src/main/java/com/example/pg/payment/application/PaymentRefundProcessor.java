@@ -6,6 +6,7 @@ import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
+import com.example.pg.payment.presentation.dto.PaymentRefundResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -32,16 +33,17 @@ public class PaymentRefundProcessor {
 
         paymentRepository.load(paymentId).ifPresent(payment -> {
             CardCompanyConnect port = portRegistry.getPortOrThrow(payment.getCardCompany().getCode());
-            boolean ok = port.requestRefund(payment.getId());
+            PaymentRefundResponse result = port.requestRefund(payment.getId());
 
-            if (ok) {
+            if (result.success()) {
                 payment.completeCancellation();
                 eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.CANCELED));
                 log.info("[Payment] event=Canceled paymentId={}", paymentIdValue);
             } else {
                 payment.markCancellationFailed();
                 eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.CANCEL_FAILED));
-                log.warn("[Payment] event=RefundRequestFailed paymentId={} status=CANCEL_FAILED", paymentIdValue);
+                log.warn("[Payment] event=RefundRequestFailed paymentId={} status=CANCEL_FAILED resultCode={} message={}",
+                        paymentIdValue, result.resultCode(), result.message());
             }
         });
     }

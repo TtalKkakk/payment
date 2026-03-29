@@ -2,6 +2,7 @@ package com.example.pg.card_company.presentation;
 
 import com.example.pg.card_company.presentation.dto.BillingKeyTokenResponse;
 import com.example.pg.payment.presentation.dto.PaymentApproveResponse;
+import com.example.pg.payment.presentation.dto.PaymentRefundResponse;
 import com.example.pg.card_company.presentation.dto.RegistrationSessionResponse;
 
 /**
@@ -28,7 +29,7 @@ public interface CardCompanyConnect {
      * POST /api/pg/payments/refund Body: { paymentId }. 승인 건만 취소·잔액 복원.
      *
      * @param paymentId PG 결제 ID (승인 시 사용한 값과 동일)
-     * @return 환불 성공 시 true, 4xx/실패 시 false
+     * @return 성공/실패·세부 필드는 카드사 본문과 동일 ({@link PaymentApproveResponse} 패턴)
      */
-    boolean requestRefund(String paymentId);
+    PaymentRefundResponse requestRefund(String paymentId);
 }

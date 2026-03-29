@@ -49,7 +49,6 @@ public class PaymentAuthorizationProcessor {
                         result.transactionId(),
                         result.approvedAt()
                 );
-                paymentRepository.save(payment);
                 eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.AUTHORIZED));
                 log.info("[Payment] event=Authorized paymentId={} approvalNumber={} transactionId={}",
                         paymentIdValue, result.approvalNumber(), result.transactionId());
