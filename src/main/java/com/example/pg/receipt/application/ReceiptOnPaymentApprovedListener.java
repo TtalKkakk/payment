@@ -1,4 +1,4 @@
-package com.example.pg.receipt.command.application;
+package com.example.pg.receipt.application;
 
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;

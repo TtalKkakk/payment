@@ -2,7 +2,7 @@ package com.example.pg.receipt.presentation;
 
 import com.example.pg.common.config.filter.MerchantAuthFilter;
 import com.example.pg.payment.domain.vo.PaymentId;
-import com.example.pg.receipt.command.application.ReceiptPdfService;
+import com.example.pg.receipt.application.ReceiptOrchestratorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/receipt")
 @RequiredArgsConstructor
 public class ReceiptController {
-    private final ReceiptPdfService receiptPdfService;
+    private final ReceiptOrchestratorService receiptOrchestratorService;
 
     /**
      * 해당 결제의 영수증 PDF 다운로드.
@@ -27,18 +27,14 @@ public class ReceiptController {
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
             @PathVariable String paymentId
     ) {
-        String paymentIdValue = requireCanonicalPaymentId(paymentId);
+        String paymentIdValue = PaymentId.from(paymentId).getValue();
 
         log.debug("[Payment] API getReceiptPdf merchantId={} paymentId={}", merchantId, paymentIdValue);
-        byte[] pdf = receiptPdfService.generateByPaymentId(paymentIdValue, merchantId);
+        byte[] pdf = receiptOrchestratorService.generateByPaymentId(paymentIdValue, merchantId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("attachment", "receipt-" + paymentIdValue + ".pdf");
         headers.setContentLength(pdf.length);
         return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
-    }
-
-    private static String requireCanonicalPaymentId(String paymentId) {
-        return PaymentId.from(paymentId).getValue();
     }
 }

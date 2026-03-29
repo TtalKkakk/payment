@@ -8,7 +8,6 @@ import com.example.pg.payment.presentation.dto.AuthorizePaymentRequest;
 import com.example.pg.payment.presentation.dto.PaymentDetailResponse;
 import com.example.pg.payment.presentation.dto.CreatePaymentRequest;
 import com.example.pg.payment.presentation.dto.CreatePaymentResponse;
-import com.example.pg.receipt.command.application.ReceiptPdfService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
