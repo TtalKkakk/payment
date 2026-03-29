@@ -171,9 +171,6 @@ public class PaymentService {
         String callbackUrl = payment.getCallbackUrl();
 
         String apiSecret = merchantPort.getApiSecret(payment.getMerchantId());
-        if (apiSecret == null) {
-            log.warn("[Payment] webhook merchant not found, signature omitted merchantId={}", payment.getMerchantId());
-        }
 
         PaymentWebhookDto payload = PaymentWebhookDto.from(payment);
         String payloadJson;

@@ -17,6 +17,7 @@ public record PaymentWebhookDto(
         String orderName,
         LocalDateTime occurredAt
 ) {
+
     public static PaymentWebhookDto from(Payment payment) {
         return new PaymentWebhookDto(
                 payment.getId(),
