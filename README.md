@@ -99,7 +99,7 @@ app:
 
 #### 1) 신청 접수
 
-- **POST** ` /api/merchant-applications`
+- **POST** `/api/merchant-applications`
 - **인증**: 없음(예외)
 
 요청 예시:
@@ -118,17 +118,14 @@ app:
 
 ```json
 {
-  "id": "application-uuid",
-  "status": "PENDED",
-  "name": "가맹점명",
-  "businessNumber": "123-45-67890",
-  "createdAt": "2026-02-28T12:34:56"
+  "applicationId": "application-uuid",
+  "status": "PENDING"
 }
 ```
 
 #### 2) 신청 상태 조회(사업자번호+비밀번호)
 
-- **POST** ` /api/merchant-applications/business-number`
+- **POST** `/api/merchant-applications/business-number`
 - **인증**: 없음(예외)
 
 요청 예시:
@@ -142,8 +139,9 @@ app:
 
 #### 3) 신청 삭제(사업자번호+비밀번호)
 
-- **POST** ` /api/merchant-applications/delete`
+- **POST** `/api/merchant-applications/delete`
 - **인증**: 없음(예외)
+- **응답**: `204 No Content` (본문 없음)
 
 요청 예시:
 
@@ -158,7 +156,7 @@ app:
 
 #### 1) API 키/시크릿 조회(사업자번호+비밀번호)
 
-- **POST** ` /api/merchants/credentials`
+- **POST** `/api/merchants/credentials`
 - **인증**: 없음(예외)
 
 요청 예시:
@@ -181,7 +179,7 @@ app:
 
 #### 2) API Secret 재발급
 
-- **POST** ` /api/merchants/regenerate-secret`
+- **POST** `/api/merchants/regenerate-secret`
 - **인증**: 필요 (`X-API-KEY`, `X-API-SECRET`)
 
 응답(200) 예시:
@@ -195,14 +193,14 @@ app:
 
 #### 3) 가맹점 삭제(API 키 폐기)
 
-- **DELETE** ` /api/merchants`
+- **DELETE** `/api/merchants`
 - **인증**: 필요 (`X-API-KEY`, `X-API-SECRET`)
 
 ### 카드 등록(UI) & Billing Key 교환(서버-서버)
 
 #### 1) 카드사 선택 페이지(UI)
 
-- **GET** ` /card-form/register?token=...`
+- **GET** `/card-form/register?token=...`
 - **인증**: **token 필수** (가맹점 서버가 `apiSecret`로 서명한 토큰)
 
 token payload(개념) 예시:
@@ -254,7 +252,7 @@ token       = payloadB64 + "." + sigB64
 
 #### 2) 카드사 선택 후 등록 시작(UI)
 
-- **POST** ` /card-form/register/start`
+- **POST** `/card-form/register/start`
 - **인증**: token 필수(폼 hidden)
 
 form fields:
@@ -263,15 +261,15 @@ form fields:
 
 #### 3) 카드사 → PG 콜백(UI)
 
-- **GET** ` /card-form/callback/register?token={sessionToken}&authCode={authCode}`
-- `sessionToken`은 PG가 카드사 이동 전에 내부 세션 저장소(Redis)에 저장한 값이며 TTL 후 자동 만료됨.
+- **GET** `/card-form/callback/register?token={sessionToken}&authCode={authCode}`
+- `sessionToken`은 PG가 카드사 이동 전에 Redis에 저장한 값(`cardRegisterSession:{uuid}` 형태의 키, **TTL 900초**)이며, 만료되거나 이미 사용·삭제된 토큰이면 오류가 난다.
 
 #### 4) BillingKey 교환(서버-서버)
 
 카드 등록 완료 후 PG는 가맹점 returnUrl로 `billingKeyToken`을 직접 전달하지 않고, **1회용 `code`만 전달**합니다.
 가맹점 서버는 아래 API로 `code → billingKeyToken`을 교환해야 합니다.
 
-- **POST** ` /api/billing-keys/exchange`
+- **POST** `/api/billing-keys/exchange`
 - **인증**: 필요 (`X-API-KEY`, `X-API-SECRET`)
 
 요청 예시:
@@ -287,7 +285,7 @@ form fields:
 ```json
 {
   "billingKeyToken": "bk_token_xxx",
-  "cardCompanyCode": "SHINHAN",
+  "cardCompanyCode": "CARD_COMPANY_A",
   "cardBrand": "VISA",
   "cardNumberMasked": "****1234",
   "expiryMasked": "12/30"
@@ -347,9 +345,10 @@ form fields:
 
 - **헤더**: `X-API-KEY`, `X-API-SECRET` (필수)
 
-#### 1) 결제 생성(READY)
+#### 1) 결제 생성(단일 API: 생성 + 승인 요청 시작)
 
-- **POST** ` /api/payments`
+- **POST** `/api/payments`
+- 성공 시 결제 엔티티가 생성되고 승인 플로우가 시작된다(비동기로 카드사 응답 후 최종 상태 확정).
 
 요청 예시:
 
@@ -362,7 +361,7 @@ form fields:
   "customerName": "홍길동",
   "callbackUrl": "https://merchant.com/payment/webhook",
   "billingKey": "bk_token_xxx",
-  "cardCompanyCode": "SHINHAN"
+  "cardCompanyCode": "CARD_COMPANY_A"
 }
 ```
 
@@ -376,11 +375,11 @@ form fields:
 
 #### 2) 결제 조회
 
-- **GET** ` /api/payments/{paymentId}`
+- **GET** `/api/payments/{paymentId}`
 
 #### 3) 같은 결제로 승인만 재시도(Tx2)
 
-- **POST** ` /api/payments/{paymentId}/authorize`
+- **POST** `/api/payments/{paymentId}/authorize`
 
 요청 예시:
 
@@ -392,15 +391,16 @@ form fields:
 
 #### 4) 결제 취소(환불)
 
-- **POST** ` /api/payments/{paymentId}/cancel`
+- **POST** `/api/payments/{paymentId}/cancel`
 
 #### 5) 영수증 PDF 다운로드
 
-- **GET** ` /api/payments/{paymentId}/receipt/pdf`
+- **GET** `/api/receipt/{paymentId}/pdf`
+- **인증**: 필요 (`X-API-KEY`, `X-API-SECRET`), 해당 결제가 본 가맹점 소유일 때만 허용
 
 #### Webhook (PG → 가맹점 callbackUrl)
 
-PG는 결제 상태 변경 시(현재 구현 기준: **FAILED, CANCELED**) 가맹점이 결제 생성 시 제공한 `callbackUrl`로 웹훅을 발송합니다.
+PG는 결제 상태가 **`AUTHORIZE_FAILED`** 또는 **`CANCELED`**로 바뀐 뒤, 가맹점이 결제 생성 시 넣은 `callbackUrl`로 웹훅을 보낸다(트랜잭션 커밋 이후 비동기).
 
 - **Method**: `POST`
 - **Destination**: 결제 생성 요청의 `callbackUrl`
@@ -422,7 +422,7 @@ PG는 결제 상태 변경 시(현재 구현 기준: **FAILED, CANCELED**) 가�
 ```json
 {
   "paymentId": "payment-uuid",
-  "status": "FAILED",
+  "status": "AUTHORIZE_FAILED",
   "merchantId": "merchant-uuid",
   "merchantOrderId": "ord-001",
   "amount": 10000,
@@ -430,6 +430,8 @@ PG는 결제 상태 변경 시(현재 구현 기준: **FAILED, CANCELED**) 가�
   "occurredAt": "2026-02-28T12:34:56"
 }
 ```
+
+`status`는 `PaymentStatus` enum 이름과 동일하다(예: `AUTHORIZE_FAILED`, `CANCELED`). `occurredAt`은 JSON 직렬화 설정에 따라 ISO-8601 문자열 등으로 내려간다.
 
 ##### 가맹점 처리 가이드(권장)
 
