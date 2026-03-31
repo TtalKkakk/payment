@@ -14,7 +14,10 @@ import java.util.Optional;
 
 public interface RetryJobRepository extends JpaRepository<RetryJob, String> {
 
-    Optional<RetryJob> findByJobTypeAndIdempotencyKey(String jobType, String idempotencyKey);
+    Optional<RetryJob> findByJobTypeAndIdempotencyKey(
+            com.example.pg.common.retry.domain.vo.JobType jobType,
+            com.example.pg.common.retry.domain.vo.IdempotencyKey idempotencyKey
+    );
 
     @Query("""
             select j from RetryJob j

@@ -84,25 +84,25 @@ public class RetryJobWorker {
         }
 
         try {
-            RetryJobHandler handler = registry.getRequired(job.getJobType());
+            RetryJobHandler handler = registry.getRequired(job.getJobType().value());
             handler.handle(job);
             job.succeed();
-            log.info("[RetryJob] succeeded id={} type={} key={}", job.getId(), job.getJobType(), job.getIdempotencyKey());
+            log.info("[RetryJob] succeeded id={} type={} key={}", job.getId(), job.getJobType().value(), job.getIdempotencyKey().value());
         } catch (NonRetryableJobException e) {
             job.dead(messageOf(e));
-            log.warn("[RetryJob] dead(non-retryable) id={} type={} key={} msg={}", job.getId(), job.getJobType(), job.getIdempotencyKey(), e.getMessage());
+            log.warn("[RetryJob] dead(non-retryable) id={} type={} key={} msg={}", job.getId(), job.getJobType().value(), job.getIdempotencyKey().value(), e.getMessage());
         } catch (Exception e) {
             boolean exhausted = job.isExhaustedAfterFailure();
             if (exhausted || job.isExpired(LocalDateTime.now())) {
                 job.dead(messageOf(e));
-                log.error("[RetryJob] dead(exhausted/expired) id={} type={} key={}", job.getId(), job.getJobType(), job.getIdempotencyKey(), e);
+                log.error("[RetryJob] dead(exhausted/expired) id={} type={} key={}", job.getId(), job.getJobType().value(), job.getIdempotencyKey().value(), e);
             } else {
-                int nextAttemptNumber = job.getAttemptCount() + 1;
-                BackoffPolicy backoffPolicy = backoffPolicyResolver.resolve(job.getJobType());
+                int nextAttemptNumber = job.getAttemptCount().value() + 1;
+                BackoffPolicy backoffPolicy = backoffPolicyResolver.resolve(job.getJobType().value());
                 LocalDateTime nextRunAt = backoffPolicy.nextRunAt(nextAttemptNumber, LocalDateTime.now());
                 job.failAndReschedule(messageOf(e), nextRunAt);
                 log.warn("[RetryJob] rescheduled id={} type={} key={} nextRunAt={} attempts={}/{}",
-                        job.getId(), job.getJobType(), job.getIdempotencyKey(), nextRunAt, job.getAttemptCount(), job.getMaxAttempts());
+                        job.getId(), job.getJobType().value(), job.getIdempotencyKey().value(), nextRunAt, job.getAttemptCount().value(), job.getMaxAttempts().value());
             }
         }
     }

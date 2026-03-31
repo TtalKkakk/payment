@@ -1,7 +1,16 @@
 package com.example.pg.common.retry.domain.aggregate;
 
 import com.example.pg.common.retry.domain.enumerate.RetryJobStatus;
+import com.example.pg.common.retry.domain.converter.AttemptCountConverter;
+import com.example.pg.common.retry.domain.converter.IdempotencyKeyConverter;
+import com.example.pg.common.retry.domain.converter.JobTypeConverter;
+import com.example.pg.common.retry.domain.converter.MaxAttemptsConverter;
+import com.example.pg.common.retry.domain.vo.AttemptCount;
+import com.example.pg.common.retry.domain.vo.IdempotencyKey;
+import com.example.pg.common.retry.domain.vo.JobType;
+import com.example.pg.common.retry.domain.vo.MaxAttempts;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -41,11 +50,13 @@ public class RetryJob {
 
     @Getter
     @Column(name = "job_type", nullable = false, length = 100)
-    private String jobType;
+    @Convert(converter = JobTypeConverter.class)
+    private JobType jobType;
 
     @Getter
     @Column(name = "idempotency_key", nullable = false, length = 200)
-    private String idempotencyKey;
+    @Convert(converter = IdempotencyKeyConverter.class)
+    private IdempotencyKey idempotencyKey;
 
     @Getter
     @Lob
@@ -59,11 +70,13 @@ public class RetryJob {
 
     @Getter
     @Column(name = "attempt_count", nullable = false)
-    private int attemptCount;
+    @Convert(converter = AttemptCountConverter.class)
+    private AttemptCount attemptCount;
 
     @Getter
     @Column(name = "max_attempts", nullable = false)
-    private int maxAttempts;
+    @Convert(converter = MaxAttemptsConverter.class)
+    private MaxAttempts maxAttempts;
 
     @Getter
     @Column(name = "next_run_at", nullable = false)
@@ -112,23 +125,21 @@ public class RetryJob {
             LocalDateTime nextRunAt,
             LocalDateTime expiresAt
     ) {
-        Objects.requireNonNull(jobType, "jobType");
-        Objects.requireNonNull(idempotencyKey, "idempotencyKey");
         Objects.requireNonNull(payloadJson, "payloadJson");
         Objects.requireNonNull(nextRunAt, "nextRunAt");
         Objects.requireNonNull(expiresAt, "expiresAt");
-        if (maxAttempts < 1) {
-            throw new IllegalArgumentException("maxAttempts must be >= 1");
-        }
+        JobType jt = JobType.of(jobType);
+        IdempotencyKey ik = IdempotencyKey.of(idempotencyKey);
+        MaxAttempts ma = MaxAttempts.of(maxAttempts);
 
         RetryJob job = new RetryJob();
         job.id = UUID.randomUUID().toString();
-        job.jobType = jobType;
-        job.idempotencyKey = idempotencyKey;
+        job.jobType = jt;
+        job.idempotencyKey = ik;
         job.payloadJson = payloadJson;
         job.status = RetryJobStatus.PENDING;
-        job.attemptCount = 0;
-        job.maxAttempts = maxAttempts;
+        job.attemptCount = AttemptCount.of(0);
+        job.maxAttempts = ma;
         job.nextRunAt = nextRunAt;
         job.expiresAt = expiresAt;
         job.createdAt = LocalDateTime.now();
@@ -141,13 +152,13 @@ public class RetryJob {
             return;
         }
         this.payloadJson = payloadJson;
-        this.maxAttempts = Math.max(this.maxAttempts, maxAttempts);
+        this.maxAttempts = MaxAttempts.of(Math.max(this.maxAttempts.value(), maxAttempts));
         this.nextRunAt = nextRunAt;
         this.expiresAt = expiresAt;
         this.updatedAt = LocalDateTime.now();
         if (status == RetryJobStatus.DEAD) {
             this.status = RetryJobStatus.PENDING;
-            this.attemptCount = 0;
+            this.attemptCount = AttemptCount.of(0);
             this.lastErrorMessage = null;
             this.lastFailedAt = null;
         }
@@ -185,7 +196,7 @@ public class RetryJob {
     }
 
     public void failAndReschedule(String errorMessage, LocalDateTime nextRunAt) {
-        this.attemptCount += 1;
+        this.attemptCount = this.attemptCount.increment();
         this.lastErrorMessage = truncate(errorMessage, 2000);
         this.lastFailedAt = LocalDateTime.now();
         this.status = RetryJobStatus.PENDING;
@@ -197,7 +208,7 @@ public class RetryJob {
     }
 
     public void dead(String errorMessage) {
-        this.attemptCount += 1;
+        this.attemptCount = this.attemptCount.increment();
         this.lastErrorMessage = truncate(errorMessage, 2000);
         this.lastFailedAt = LocalDateTime.now();
         this.status = RetryJobStatus.DEAD;
@@ -208,7 +219,7 @@ public class RetryJob {
     }
 
     public boolean isExhaustedAfterFailure() {
-        return attemptCount + 1 >= maxAttempts;
+        return attemptCount.value() + 1 >= maxAttempts.value();
     }
 
     private static String truncate(String s, int maxLen) {

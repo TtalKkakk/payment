@@ -2,6 +2,8 @@ package com.example.pg.common.retry.job;
 
 import com.example.pg.common.retry.domain.aggregate.RetryJob;
 import com.example.pg.common.retry.domain.enumerate.RetryJobStatus;
+import com.example.pg.common.retry.domain.vo.IdempotencyKey;
+import com.example.pg.common.retry.domain.vo.JobType;
 import com.example.pg.common.retry.infrastructure.persistence.RetryJobRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -30,7 +32,10 @@ public class RetryJobService {
         LocalDateTime nextRunAt = now.plus(initialDelay);
         LocalDateTime expiresAt = now.plus(ttl);
 
-        return retryJobRepository.findByJobTypeAndIdempotencyKey(jobType, idempotencyKey)
+        JobType jt = JobType.of(jobType);
+        IdempotencyKey ik = IdempotencyKey.of(idempotencyKey);
+
+        return retryJobRepository.findByJobTypeAndIdempotencyKey(jt, ik)
                 .map(existing -> {
                     // DEAD를 살린다고? -> DEAD를 살렸을 때 서비스 부하가 발생할 가능성은?
                     existing.overwritePayloadAndSchedule(nextRunAt, expiresAt, maxAttempts, payloadJson);
@@ -43,7 +48,7 @@ public class RetryJobService {
                         return retryJobRepository.save(created);
                     } catch (DataIntegrityViolationException e) {
                         // 동시 생성 경합 시 재조회 후 갱신
-                        RetryJob raced = retryJobRepository.findByJobTypeAndIdempotencyKey(jobType, idempotencyKey)
+                        RetryJob raced = retryJobRepository.findByJobTypeAndIdempotencyKey(jt, ik)
                                 .orElseThrow(() -> e);
                         raced.overwritePayloadAndSchedule(nextRunAt, expiresAt, maxAttempts, payloadJson);
                         return raced;
@@ -53,7 +58,9 @@ public class RetryJobService {
 
     @Transactional(readOnly = true)
     public boolean isSucceeded(String jobType, String idempotencyKey) {
-        return retryJobRepository.findByJobTypeAndIdempotencyKey(jobType, idempotencyKey)
+        JobType jt = JobType.of(jobType);
+        IdempotencyKey ik = IdempotencyKey.of(idempotencyKey);
+        return retryJobRepository.findByJobTypeAndIdempotencyKey(jt, ik)
                 .map(j -> j.getStatus() == RetryJobStatus.SUCCEEDED)
                 .orElse(false);
     }
