@@ -9,6 +9,7 @@ import com.example.pg.common.retry.domain.enumerate.RetryJobStatus;
 import com.example.pg.common.retry.handler.RetryJobHandler;
 import com.example.pg.common.retry.infrastructure.persistence.RetryJobRepository;
 import com.example.pg.common.retry.handler.RetryJobHandlerRegistry;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +25,7 @@ import java.util.UUID;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "app.retry", name = "enabled", havingValue = "true")
 public class RetryJobWorker {
 
@@ -33,19 +35,7 @@ public class RetryJobWorker {
     private final JobTypeBackoffPolicyResolver backoffPolicyResolver;
     private final String workerId = "retry-worker-" + UUID.randomUUID();
 
-    public RetryJobWorker(
-            RetryWorkerProperties props,
-            RetryJobRepository retryJobRepository,
-            RetryJobHandlerRegistry registry,
-            JobTypeBackoffPolicyResolver backoffPolicyResolver
-    ) {
-        this.props = props;
-        this.retryJobRepository = retryJobRepository;
-        this.registry = registry;
-        this.backoffPolicyResolver = backoffPolicyResolver;
-    }
-
-    @Scheduled(fixedDelayString = "${app.retry.poll-interval-ms:2000}")
+    @Scheduled(fixedDelayString = "${app.retry.poll-interval-ms:60000}")
     public void pollOnce() {
         LocalDateTime now = LocalDateTime.now();
         List<RetryJob> due = retryJobRepository.findDue(RetryJobStatus.PENDING, now, PageRequest.of(0, props.batchSize()));
@@ -93,17 +83,21 @@ public class RetryJobWorker {
             log.warn("[RetryJob] dead(non-retryable) id={} type={} key={} msg={}", job.getId(), job.getJobType().value(), job.getIdempotencyKey().value(), e.getMessage());
         } catch (Exception e) {
             boolean exhausted = job.isExhaustedAfterFailure();
-            if (exhausted || job.isExpired(LocalDateTime.now())) {
-                job.dead(messageOf(e));
-                log.error("[RetryJob] dead(exhausted/expired) id={} type={} key={}", job.getId(), job.getJobType().value(), job.getIdempotencyKey().value(), e);
-            } else {
-                int nextAttemptNumber = job.getAttemptCount().value() + 1;
-                BackoffPolicy backoffPolicy = backoffPolicyResolver.resolve(job.getJobType().value());
-                LocalDateTime nextRunAt = backoffPolicy.nextRunAt(nextAttemptNumber, LocalDateTime.now());
-                job.failAndReschedule(messageOf(e), nextRunAt);
-                log.warn("[RetryJob] rescheduled id={} type={} key={} nextRunAt={} attempts={}/{}",
-                        job.getId(), job.getJobType().value(), job.getIdempotencyKey().value(), nextRunAt, job.getAttemptCount().value(), job.getMaxAttempts().value());
-            }
+            retryMethod(e, exhausted, job);
+        }
+    }
+
+    private void retryMethod(Exception e, boolean exhausted, RetryJob job) {
+        if (exhausted || job.isExpired(LocalDateTime.now())) {
+            job.dead(messageOf(e));
+            log.error("[RetryJob] dead(exhausted/expired) id={} type={} key={}", job.getId(), job.getJobType().value(), job.getIdempotencyKey().value(), e);
+        } else {
+            int nextAttemptNumber = job.getAttemptCount().value() + 1;
+            BackoffPolicy backoffPolicy = backoffPolicyResolver.resolve(job.getJobType().value());
+            LocalDateTime nextRunAt = backoffPolicy.nextRunAt(nextAttemptNumber, LocalDateTime.now());
+            job.failAndReschedule(messageOf(e), nextRunAt);
+            log.warn("[RetryJob] rescheduled id={} type={} key={} nextRunAt={} attempts={}/{}",
+                    job.getId(), job.getJobType().value(), job.getIdempotencyKey().value(), nextRunAt, job.getAttemptCount().value(), job.getMaxAttempts().value());
         }
     }
 

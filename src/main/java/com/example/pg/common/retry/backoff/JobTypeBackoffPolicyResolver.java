@@ -1,6 +1,7 @@
 package com.example.pg.common.retry.backoff;
 
 import com.example.pg.common.retry.backoff.impl.ExponentialJitterBackoffPolicy;
+import com.example.pg.common.retry.config.Policy;
 import com.example.pg.common.retry.config.RetryBackoffProperties;
 import org.springframework.stereotype.Component;
 
@@ -19,12 +20,12 @@ public class JobTypeBackoffPolicyResolver {
     }
 
     public BackoffPolicy resolve(String jobType) {
-        return cache.computeIfAbsent(jobType == null ? "" : jobType, jt -> toPolicy(jt));
+        return cache.computeIfAbsent(jobType == null ? "" : jobType, this::toPolicy);
     }
 
     private BackoffPolicy toPolicy(String jobType) {
-        RetryBackoffProperties.Policy configured = props.getByJobType().get(jobType);
-        RetryBackoffProperties.Policy p = configured != null ? configured : props.getDefaultPolicy();
+        Policy configured = props.getByJobType().get(jobType);
+        Policy p = configured != null ? configured : props.getDefaultPolicy();
         return new ExponentialJitterBackoffPolicy(
                 Duration.ofMillis(p.getInitialDelayMs()),
                 p.getMultiplier(),

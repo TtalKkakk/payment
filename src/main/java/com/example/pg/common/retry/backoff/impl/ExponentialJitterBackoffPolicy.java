@@ -4,6 +4,7 @@ import com.example.pg.common.retry.backoff.BackoffPolicy;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -17,10 +18,7 @@ public class ExponentialJitterBackoffPolicy implements BackoffPolicy {
     private final double jitterRatio;
 
     public ExponentialJitterBackoffPolicy(Duration initialDelay, double multiplier, Duration maxDelay, double jitterRatio) {
-        if (initialDelay.isNegative() || initialDelay.isZero()) throw new IllegalArgumentException("initialDelay must be > 0");
-        if (multiplier < 1.0) throw new IllegalArgumentException("multiplier must be >= 1.0");
-        if (maxDelay.isNegative() || maxDelay.isZero()) throw new IllegalArgumentException("maxDelay must be > 0");
-        if (jitterRatio < 0.0 || jitterRatio > 1.0) throw new IllegalArgumentException("jitterRatio must be between 0 and 1");
+        validate(initialDelay, multiplier, maxDelay, jitterRatio);
         this.initialDelay = initialDelay;
         this.multiplier = multiplier;
         this.maxDelay = maxDelay;
@@ -48,6 +46,33 @@ public class ExponentialJitterBackoffPolicy implements BackoffPolicy {
         long max = baseMs + delta;
         long chosen = ThreadLocalRandom.current().nextLong(min, max + 1);
         return Duration.ofMillis(chosen);
+    }
+
+    private static void validate(Duration initialDelay, double multiplier, Duration maxDelay, double jitterRatio) {
+        Objects.requireNonNull(initialDelay, "initialDelay");
+        Objects.requireNonNull(maxDelay, "maxDelay");
+        requirePositive(initialDelay, "initialDelay");
+        requireAtLeast(multiplier, 1.0, "multiplier");
+        requirePositive(maxDelay, "maxDelay");
+        requireBetweenInclusive(jitterRatio, 0.0, 1.0, "jitterRatio");
+    }
+
+    private static void requirePositive(Duration d, String name) {
+        if (d.isNegative() || d.isZero()) {
+            throw new IllegalArgumentException(name + " must be > 0");
+        }
+    }
+
+    private static void requireAtLeast(double value, double min, String name) {
+        if (value < min) {
+            throw new IllegalArgumentException(name + " must be >= " + min);
+        }
+    }
+
+    private static void requireBetweenInclusive(double value, double min, double max, String name) {
+        if (value < min || value > max) {
+            throw new IllegalArgumentException(name + " must be between " + min + " and " + max);
+        }
     }
 }
 
