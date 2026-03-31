@@ -26,21 +26,7 @@ pipeline {
       }
     }
 
-    stage("Build docker image") {
-      steps {
-        // 단순 배포용: 항상 동일한 로컬 태그(pg-app:latest)를 만들어 save/load로 EC2에 전달합니다.
-        sh "docker build --platform=linux/amd64 -t pg-app:latest ."
-      }
-    }
-
-    stage("Save docker image") {
-      steps {
-        sh "rm -f pg-app.tar && docker save -o pg-app.tar pg-app:latest"
-      }
-    }
-
-    // sshagent 는 "SSH Agent" 플러그인이 필요합니다. 없으면 withCredentials(sshUserPrivateKey)로 대체합니다.
-    stage("Deploy to EC2 (save/load + docker compose)") {
+    stage("Deploy to EC2 (upload jar + docker build + compose)") {
       steps {
         withCredentials([
           sshUserPrivateKey(
@@ -57,12 +43,16 @@ pipeline {
               mkdir -p ${env.EC2_PATH}
             '
 
-            # EC2에 이미 docker-compose.ec2.yml + .env 를 올려두었다고 가정.
-            scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no pg-app.tar \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/pg-app.tar
+            # EC2에 이미 docker-compose.ec2.yml + Dockerfile 을 올려두었다고 가정.
+            # Jenkins에서 만든 JAR만 올리고, docker build는 EC2에서 수행.
+            JAR_FILE=\$(ls -1 build/libs/*.jar | head -n 1)
+            scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$JAR_FILE" \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/app.jar
+            scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no .env.ec2 \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/.env
 
             ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no \$SSH_USER@${env.EC2_HOST} '
-              cd ${env.EC2_PATH} && \\
-              docker load -i pg-app.tar && \\
+              set -e
+              cd ${env.EC2_PATH}
+              docker build --platform=linux/amd64 -t pg-app:latest .
               docker compose -f docker-compose.ec2.yml up -d --no-deps pg
             '
           """

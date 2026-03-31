@@ -41,6 +41,10 @@ out/
 ### Logs ###
 logs/
 
+# dotenv (secrets)
+.env
+.env.*
+
 # k6 load-test scripts (local only)
 scripts/k6/
 
