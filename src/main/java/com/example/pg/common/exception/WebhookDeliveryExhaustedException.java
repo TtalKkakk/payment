@@ -1,4 +1,4 @@
-package com.example.pg.common.webhook;
+package com.example.pg.common.exception;
 
 /**
  * 가맹점 웹훅 전송이 설정된 재시도 횟수를 모두 소진한 뒤에도 성공하지 못했을 때 던진다.

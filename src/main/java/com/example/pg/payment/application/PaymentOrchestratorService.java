@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 public class PaymentOrchestratorService {
 
     private final PaymentService paymentService;
+    private final com.example.pg.payment.application.retry.PaymentRetryJobEnqueuer paymentRetryJobEnqueuer;
 
     /**
      * 결제하기 단일 API: 트랜잭션 1(결제 생성 READY) + 트랜잭션 2(승인 요청 AUTHORIZING).
@@ -59,7 +60,7 @@ public class PaymentOrchestratorService {
         } catch (Exception ce) {
             log.error("[Payment] compensation failed paymentId={}", paymentId.getValue(), ce);
             original.addSuppressed(ce);
-            // 재시도
+            paymentRetryJobEnqueuer.enqueueCompensateCreationFailure(paymentId.getValue());
         }
     }
 }

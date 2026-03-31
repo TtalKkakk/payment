@@ -1,5 +1,6 @@
 package com.example.pg.common.webhook;
 
+import com.example.pg.common.exception.WebhookDeliveryExhaustedException;
 import com.example.pg.common.util.HttpOutbound;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,6 +1,6 @@
 package com.example.pg.common.presentation.impl;
 
-import com.example.pg.common.webhook.WebhookDeliveryExhaustedException;
+import com.example.pg.common.exception.WebhookDeliveryExhaustedException;
 import com.example.pg.common.webhook.WebhookDeliveryExecutor;
 import com.example.pg.common.presentation.FranchiseConnect;
 import lombok.RequiredArgsConstructor;
