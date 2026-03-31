@@ -5,6 +5,7 @@ package com.example.pg.common.retry.domain.enumerate;
  * 필요 시 enum 대신 문자열 상수로 운용해도 된다.
  */
 public enum RetryJobType {
-    PAYMENT_COMPENSATE_CREATION_FAILURE
+    PAYMENT_COMPENSATE_CREATION_FAILURE,
+    WEBHOOK_DELIVERY
 }
 

@@ -2,7 +2,7 @@ package com.example.pg.common.retry.worker;
 
 import com.example.pg.common.exception.NonRetryableJobException;
 import com.example.pg.common.retry.backoff.BackoffPolicy;
-import com.example.pg.common.retry.backoff.impl.ExponentialJitterBackoffPolicy;
+import com.example.pg.common.retry.backoff.JobTypeBackoffPolicyResolver;
 import com.example.pg.common.retry.config.RetryWorkerProperties;
 import com.example.pg.common.retry.domain.aggregate.RetryJob;
 import com.example.pg.common.retry.domain.enumerate.RetryJobStatus;
@@ -30,23 +30,19 @@ public class RetryJobWorker {
     private final RetryWorkerProperties props;
     private final RetryJobRepository retryJobRepository;
     private final RetryJobHandlerRegistry registry;
-    private final BackoffPolicy backoffPolicy;
+    private final JobTypeBackoffPolicyResolver backoffPolicyResolver;
     private final String workerId = "retry-worker-" + UUID.randomUUID();
 
     public RetryJobWorker(
             RetryWorkerProperties props,
             RetryJobRepository retryJobRepository,
-            RetryJobHandlerRegistry registry
+            RetryJobHandlerRegistry registry,
+            JobTypeBackoffPolicyResolver backoffPolicyResolver
     ) {
         this.props = props;
         this.retryJobRepository = retryJobRepository;
         this.registry = registry;
-        this.backoffPolicy = new ExponentialJitterBackoffPolicy(
-                Duration.ofSeconds(10),
-                2.0,
-                Duration.ofHours(6),
-                0.2
-        );
+        this.backoffPolicyResolver = backoffPolicyResolver;
     }
 
     @Scheduled(fixedDelayString = "${app.retry.poll-interval-ms:2000}")
@@ -102,6 +98,7 @@ public class RetryJobWorker {
                 log.error("[RetryJob] dead(exhausted/expired) id={} type={} key={}", job.getId(), job.getJobType(), job.getIdempotencyKey(), e);
             } else {
                 int nextAttemptNumber = job.getAttemptCount() + 1;
+                BackoffPolicy backoffPolicy = backoffPolicyResolver.resolve(job.getJobType());
                 LocalDateTime nextRunAt = backoffPolicy.nextRunAt(nextAttemptNumber, LocalDateTime.now());
                 job.failAndReschedule(messageOf(e), nextRunAt);
                 log.warn("[RetryJob] rescheduled id={} type={} key={} nextRunAt={} attempts={}/{}",
