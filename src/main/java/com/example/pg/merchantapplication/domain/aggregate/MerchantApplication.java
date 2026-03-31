@@ -79,7 +79,7 @@ public class MerchantApplication {
 
     @Getter
     @Version
-    @Column(name = "version")
+    @Column(name = "version", nullable = false)
     private Long version;
 
     public MerchantApplication(
