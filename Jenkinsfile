@@ -11,6 +11,9 @@ pipeline {
 
     // Jenkins Credentials ID — Kind: "SSH Username with private key"
     EC2_SSH_CREDENTIALS_ID = "pg-server-jenkins-id"
+
+    // Jenkins Credentials ID — Kind: "Secret file" (.env 파일)
+    ENV_FILE_CREDENTIALS_ID = "pg-ec2-env-"
   }
 
   stages {
@@ -33,6 +36,10 @@ pipeline {
             credentialsId: "${env.EC2_SSH_CREDENTIALS_ID}",
             keyFileVariable: "SSH_KEY",
             usernameVariable: "SSH_USER"
+          ),
+          file(
+            credentialsId: "${env.ENV_FILE_CREDENTIALS_ID}",
+            variable: "ENV_FILE"
           )
         ]) {
           sh """
@@ -47,7 +54,7 @@ pipeline {
             # Jenkins에서 만든 JAR만 올리고, docker build는 EC2에서 수행.
             JAR_FILE=\$(ls -1 build/libs/*.jar | head -n 1)
             scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$JAR_FILE" \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/app.jar
-            scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no .env.ec2 \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/.env
+            scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$ENV_FILE" \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/.env
 
             ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no \$SSH_USER@${env.EC2_HOST} '
               set -e
