@@ -3,6 +3,7 @@ package com.example.pg.card_company.application.dto;
 public record CardRegisterSession(
         String cardCompanyCode,
         String returnUrl,
+        String webhookUrl,
         String merchantId
 ) {
     public CardRegisterSession {
@@ -17,6 +18,9 @@ public record CardRegisterSession(
         }
         if (!returnUrl.contains("?") && returnUrl.endsWith("/")) {
             returnUrl = returnUrl.substring(0, returnUrl.length() - 1);
+        }
+        if (webhookUrl != null && !webhookUrl.isBlank() && !webhookUrl.contains("?") && webhookUrl.endsWith("/")) {
+            webhookUrl = webhookUrl.substring(0, webhookUrl.length() - 1);
         }
     }
 }

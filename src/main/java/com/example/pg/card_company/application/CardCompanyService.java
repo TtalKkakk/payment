@@ -1,8 +1,5 @@
 package com.example.pg.card_company.application;
 
-import com.example.pg.card_company.application.dto.AuthCodeSession;
-import com.example.pg.card_company.presentation.dto.BillingKeyExchangeRequest;
-import com.example.pg.card_company.presentation.dto.BillingKeyExchangeResponse;
 import com.example.pg.card_company.presentation.dto.BillingKeyTokenResponse;
 import com.example.pg.card_company.util.CardCompanyPortRegistry;
 import com.example.pg.card_company.infrastructure.persistence.CardCompanyRepository;
@@ -28,12 +25,9 @@ import java.util.List;
 public class CardCompanyService {
     private final CardCompanyRepository cardCompanyRepository;
     private final SessionStore<CardRegisterSession> cardRegisterSessionSessionStore;
-    private final SessionStore<AuthCodeSession> codeSessionStore;
     private final CardCompanyPortRegistry cardCompanyPortRegistry;
     private static final String SESSION_PREFIX = "cardRegisterSession:";
-    private static final String KEY_PREFIX = "billingKeyExchange:";
     private static final long ttlForCardRegister = 900;
-    private static final long ttlForCode = 300;
 
     @Transactional(readOnly = true)
     public List<CardCompany> findAllActive() {
@@ -89,29 +83,5 @@ public class CardCompanyService {
     public void removeCardRegisterSession(String sessionToken){
         log.debug("[CardCompany] remove CardRegisterSession key = {} in sessionStore", sessionToken);
         cardRegisterSessionSessionStore.remove(SESSION_PREFIX + sessionToken);
-    }
-
-    public String issueCode(AuthCodeSession session) {
-        log.debug("[CardCompany] issue code and save billing key info {}, {}, {} in sessionStore",
-                session.cardCompanyCode(),
-                session.cardNumberMasked(),
-                session.expiryMasked());
-        return codeSessionStore.put(session, KEY_PREFIX, ttlForCode);
-    }
-
-    public BillingKeyExchangeResponse getBillingKeyAndCardInfo(BillingKeyExchangeRequest request){
-        AuthCodeSession session = codeSessionStore.get(KEY_PREFIX + request.code(), AuthCodeSession.class)
-                .orElseThrow(() -> new BusinessException(ErrorCode.BILLING_KEY_EXCHANGE_CODE_INVALID));
-        log.info("[CardCompany] get billing key with card info {}, {}, {} in sessionStore",
-                session.cardCompanyCode(),
-                session.cardNumberMasked(),
-                session.expiryMasked());
-        return new BillingKeyExchangeResponse(
-                session.billingKeyToken(),
-                session.cardCompanyCode(),
-                session.cardBrand(),
-                session.cardNumberMasked(),
-                session.expiryMasked()
-        );
     }
 }

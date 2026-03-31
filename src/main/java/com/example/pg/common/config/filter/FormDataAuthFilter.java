@@ -51,6 +51,7 @@ public class FormDataAuthFilter extends OncePerRequestFilter {
             request.setAttribute(FormDataTokenVerifier.ATTR_MERCHANT_ID, verified.merchantId());
             request.setAttribute(FormDataTokenVerifier.ATTR_API_KEY, verified.apiKey());
             request.setAttribute(FormDataTokenVerifier.ATTR_RETURN_URL, verified.returnUrl());
+            request.setAttribute(FormDataTokenVerifier.ATTR_WEBHOOK_URL, verified.webhookUrl());
             filterChain.doFilter(request, response);
         } catch (BusinessException e) {
             log.warn("[Payment] BillingKey register denied uri={} reason={}", request.getRequestURI(), e.getErrorCode().name());

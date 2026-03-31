@@ -22,6 +22,7 @@ public class FormDataTokenVerifier {
 
     public static final String ATTR_MERCHANT_ID = "billingKeyRegister.merchantId";
     public static final String ATTR_RETURN_URL = "billingKeyRegister.returnUrl";
+    public static final String ATTR_WEBHOOK_URL = "billingKeyRegister.webhookUrl";
     public static final String ATTR_API_KEY = "billingKeyRegister.apiKey";
 
     private static final String PURPOSE = "billing_key_register";
@@ -77,7 +78,7 @@ public class FormDataTokenVerifier {
             }
         }
 
-        return new Verified(merchant.getId(), payload.apiKey(), payload.returnUrl());
+        return new Verified(merchant.getId(), payload.apiKey(), payload.returnUrl(), payload.webhookUrl());
     }
 
     private BillingKeyRegisterTokenPayload decodePayload(String payloadB64) {
@@ -113,11 +114,13 @@ public class FormDataTokenVerifier {
     public record Verified(
             String merchantId,
             String apiKey,
-            String returnUrl
+            String returnUrl,
+            String webhookUrl
     ) {}
     public record BillingKeyRegisterTokenPayload(
             String apiKey,
             String returnUrl,
+            String webhookUrl,
             long iat,
             long exp,
             String nonce,

@@ -2,7 +2,6 @@ package com.example.pg.card_company.presentation;
 
 import com.example.pg.card_company.application.BillingKeyWebhookNotifier;
 import com.example.pg.card_company.application.CardCompanyService;
-import com.example.pg.card_company.application.dto.AuthCodeSession;
 import com.example.pg.card_company.application.dto.CardRegisterSession;
 import com.example.pg.card_company.domain.vo.BaseUrl;
 import com.example.pg.card_company.presentation.dto.RegistrationSessionResponse;
@@ -20,8 +19,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,12 +43,14 @@ public class CardCompanyFormController {
             Model model
     ) {
         String returnUrl = (String) request.getAttribute(FormDataTokenVerifier.ATTR_RETURN_URL);
+        String webhookUrl = (String) request.getAttribute(FormDataTokenVerifier.ATTR_WEBHOOK_URL);
         log.debug("[CardCompany] BillingKey register select returnUrl={}", returnUrl != null ? returnUrl : "");
         List<CardCompanyListItemDto> cardCompanies = cardCompanyService.findAllActive().stream()
                 .map(CardCompanyListItemDto::from)
                 .collect(Collectors.toList());
         model.addAttribute("cardCompanies", cardCompanies);
         model.addAttribute("returnUrl", returnUrl != null ? returnUrl : "");
+        model.addAttribute("webhookUrl", webhookUrl != null ? webhookUrl : "");
         model.addAttribute("token", token);
         if (request.getAttribute("_csrf") != null) {
             model.addAttribute("_csrf", request.getAttribute("_csrf"));
@@ -70,6 +69,7 @@ public class CardCompanyFormController {
     ) {
         log.debug("[CardCompany] BillingKey register start cardCompanyCode={}", cardCompanyCode);
         String returnUrl = (String) request.getAttribute(FormDataTokenVerifier.ATTR_RETURN_URL);
+        String webhookUrl = (String) request.getAttribute(FormDataTokenVerifier.ATTR_WEBHOOK_URL);
         String merchantId = (String) request.getAttribute(FormDataTokenVerifier.ATTR_MERCHANT_ID);
 
         String pgCallbackUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
@@ -77,7 +77,7 @@ public class CardCompanyFormController {
                 .build()
                 .toUriString();
 
-        String sessionToken = cardCompanyService.saveCardRegisterSession(new CardRegisterSession(cardCompanyCode, returnUrl, merchantId));
+        String sessionToken = cardCompanyService.saveCardRegisterSession(new CardRegisterSession(cardCompanyCode, returnUrl, webhookUrl, merchantId));
         String pgCallbackWithToken = pgCallbackUrl + "?token=" + sessionToken;
 
         // 카드사와 통신
@@ -105,30 +105,17 @@ public class CardCompanyFormController {
         cardCompanyService.removeCardRegisterSession(sessionToken);
 
         String returnUrl = session.returnUrl();
+        String webhookUrl = session.webhookUrl();
 
-        // 웹훅으로 빌링키를 넘기는 설계: app.billing-key.webhook.enabled=true 일 때만 POST (returnUrl을 웹훅 URL로 쓰는 임시 매핑 — 전용 URL 필드 분리 권장)
+        // 웹훅으로 빌링키를 넘기는 설계: app.billing-key.webhook.enabled=true 일 때만 POST
         billingKeyWebhookNotifier.notifyBillingKeyRegisteredIfEnabled(
                 session.merchantId(),
-                returnUrl,
+                webhookUrl,
                 session.cardCompanyCode(),
                 response
         );
 
-        // billingKeyToken을 브라우저에 노출하지 않기 위해 1회용 code만 전달한다.
-        // 가맹점 서버는 /api/billing-keys/exchange로 code를 보내 billingKeyToken을 교환한다.
-        String merchantId = session.merchantId();
-        String code = cardCompanyService.issueCode(new AuthCodeSession(
-                merchantId,
-                response.billingKeyToken(),
-                session.cardCompanyCode(),
-                response.cardBrand(),
-                response.cardNumberMasked(),
-                response.expiryMasked()
-        ));
-
-        String separator = returnUrl.contains("?") ? "&" : "?";
-        String redirect = returnUrl + separator
-                + "code=" + code;
-        return "redirect:" + redirect;
+        // billingKeyToken은 서버-서버 웹훅으로 전달한다. (브라우저에는 토큰/교환 code를 내려주지 않는다)
+        return "redirect:" + returnUrl;
     }
 }

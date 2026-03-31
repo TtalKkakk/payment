@@ -50,6 +50,9 @@ services:
       # 카드 등록 세션 TTL
       APP_PAYMENT_CARD_REGISTER_SESSION_TTL_SECONDS: ${APP_PAYMENT_CARD_REGISTER_SESSION_TTL_SECONDS:-900}
 
+      # 빌링키 등록 완료 웹훅(서버-서버)
+      APP_BILLING_KEY_WEBHOOK_ENABLED: ${APP_BILLING_KEY_WEBHOOK_ENABLED:-true}
+
 volumes:
   mysql_data:
   redis_data:
