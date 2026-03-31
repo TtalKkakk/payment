@@ -4,7 +4,7 @@ pipeline {
   environment {
     // ---- 아래 값들은 Jenkins에서 환경에 맞게 수정/대체하세요. ----
     // EC2 배포 경로 (EC2에 미리 만들고 docker-compose.ec2.yml + .env를 올려두는 방식)
-    EC2_HOST = "3.35.206.118"
+    EC2_HOST = "13.209.84.21"
     // 배포용 SSH Credential의 Username(예: ubuntu)과 동일하게 맞추세요.
     EC2_USER = "ubuntu"
     EC2_PATH = "/home/ubuntu/pg-deploy"
