@@ -13,7 +13,7 @@ pipeline {
     EC2_SSH_CREDENTIALS_ID = "pg-server-jenkins-id"
 
     // Jenkins Credentials ID — Kind: "Secret file" (.env 파일)
-    ENV_FILE_CREDENTIALS_ID = "pg-ec2-env-"
+    ENV_FILE_CREDENTIALS_ID = "pg-ec2-env"
   }
 
   stages {
