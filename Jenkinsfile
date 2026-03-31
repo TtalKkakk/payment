@@ -12,8 +12,10 @@ pipeline {
     // Jenkins Credentials ID — Kind: "SSH Username with private key"
     EC2_SSH_CREDENTIALS_ID = "pg-server-jenkins-id"
 
-    // Jenkins Credentials ID — Kind: "Secret file" (.env 파일)
-    ENV_FILE_CREDENTIALS_ID = "pg-ec2-env"
+    // (권장) 운영 .env 파일을 Jenkins Credentials(Secret file)로 관리할 때 사용
+    // Jenkins → Credentials에서 Kind: "Secret file"로 업로드한 뒤 ID를 여기에 넣으세요.
+    // 비워두면(기본값) repo 내 ".env.ec2"가 있을 때만 전송합니다.
+    EC2_ENV_FILE_CREDENTIALS_ID = "pg-ec2-env"
   }
 
   stages {
@@ -29,40 +31,77 @@ pipeline {
       }
     }
 
-    stage("Deploy to EC2 (upload jar + docker build + compose)") {
+    stage("Resolve jar path") {
       steps {
-        withCredentials([
-          sshUserPrivateKey(
-            credentialsId: "${env.EC2_SSH_CREDENTIALS_ID}",
-            keyFileVariable: "SSH_KEY",
-            usernameVariable: "SSH_USER"
-          ),
-          file(
-            credentialsId: "${env.ENV_FILE_CREDENTIALS_ID}",
-            variable: "ENV_FILE"
-          )
-        ]) {
-          sh """
-            set -e
-            chmod 600 "\$SSH_KEY"
+        script {
+          env.BOOT_JAR = sh(returnStdout: true, script: "ls -1 build/libs/*.jar | head -n 1").trim()
+          if (!env.BOOT_JAR) {
+            error("bootJar 결과물을 찾지 못했습니다. (build/libs/*.jar)")
+          }
+          echo "BOOT_JAR=${env.BOOT_JAR}"
+        }
+      }
+    }
 
-            ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no \$SSH_USER@${env.EC2_HOST} '
-              mkdir -p ${env.EC2_PATH}
-            '
+    stage("Deploy to EC2 (jar -> docker build -> docker compose)") {
+      steps {
+        script {
+          def useEnvCredential = env.EC2_ENV_FILE_CREDENTIALS_ID != null && !env.EC2_ENV_FILE_CREDENTIALS_ID.trim().isEmpty()
 
-            # EC2에 이미 docker-compose.ec2.yml + Dockerfile 을 올려두었다고 가정.
-            # Jenkins에서 만든 JAR만 올리고, docker build는 EC2에서 수행.
-            JAR_FILE=\$(ls -1 build/libs/*.jar | head -n 1)
-            scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$JAR_FILE" \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/app.jar
-            scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$ENV_FILE" \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/.env
+          def creds = [
+            sshUserPrivateKey(
+              credentialsId: "${env.EC2_SSH_CREDENTIALS_ID}",
+              keyFileVariable: "SSH_KEY",
+              usernameVariable: "SSH_USER"
+            )
+          ]
+          if (useEnvCredential) {
+            creds.add(file(credentialsId: "${env.EC2_ENV_FILE_CREDENTIALS_ID}", variable: "ENV_FILE"))
+          }
 
-            ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no \$SSH_USER@${env.EC2_HOST} '
+          withCredentials(creds) {
+            sh """
               set -e
-              cd ${env.EC2_PATH}
-              docker build --platform=linux/amd64 -t pg-app:latest .
-              docker compose -f docker-compose.ec2.yml up -d --no-deps pg
-            '
-          """
+              chmod 600 "\$SSH_KEY"
+
+              ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no \$SSH_USER@${env.EC2_HOST} '
+                mkdir -p ${env.EC2_PATH}
+              '
+
+              # Jenkins에서 만든 jar + Dockerfile + compose(+.dockerignore)를 EC2로 전송
+              scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no "${BOOT_JAR}" \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/app.jar
+              scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no Dockerfile \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/Dockerfile
+              scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no docker-compose.ec2.yml \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/docker-compose.ec2.yml
+              if [ -f .dockerignore ]; then
+                scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no .dockerignore \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/.dockerignore
+              fi
+            """
+
+            if (useEnvCredential) {
+              sh """
+                # 운영 .env (Jenkins Secret file) → EC2로 덮어쓰기
+                scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$ENV_FILE" \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/.env
+              """
+            } else {
+              def envFileExists = (sh(returnStatus: true, script: 'test -f .env.ec2') == 0)
+              if (envFileExists) {
+                sh """
+                  scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no .env.ec2 \$SSH_USER@${env.EC2_HOST}:${env.EC2_PATH}/.env
+                """
+              } else {
+                echo "SKIP: .env.ec2가 워크스페이스에 없어 .env 전송을 건너뜁니다. (권장: Jenkins Secret file로 EC2_ENV_FILE_CREDENTIALS_ID 설정)"
+              }
+            }
+
+            sh """
+              ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no \$SSH_USER@${env.EC2_HOST} '
+                set -e
+                cd ${env.EC2_PATH}
+                docker build --platform=linux/amd64 -t pg-app:latest .
+                docker compose -f docker-compose.ec2.yml up -d --no-deps pg
+              '
+            """
+          }
         }
       }
     }
