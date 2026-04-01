@@ -4,12 +4,6 @@
 
 ## 서비스 사용 가이드 (가맹점/연동 개발자용)
 
-### Base URL
-
-- **운영 서버**: `http://13.209.84.21:8080`
-
-이 문서의 모든 경로는 위 Base URL 기준입니다. (예: `POST http://13.209.84.21:8080/api/payments`)
-
 ### URL 구성
 
 - **가맹점(서버-서버) API**: `/api/**`
@@ -38,11 +32,7 @@
 4) **빌링키 등록 완료 웹훅 수신(서버-서버)**: PG → 가맹점 `returnUrl`로 웹훅 `POST` + `X-PG-Signature`  
 5) **결제 생성/승인 시작**: `POST /api/payments`  
 6) **웹훅 수신 및 서명 검증**: PG → 가맹점 `callbackUrl`로 `POST` + `X-PG-Signature`
-
-### 관리자 UI(운영자용)
-
-- 로그인: `GET http://13.209.84.21:8080/admin/login`
-- 관리자 UI: `http://13.209.84.21:8080/admin/**`
+`
 
 ## Tech Stack
 
@@ -92,10 +82,6 @@ app:
 ```bash
 ./gradlew bootRun
 ```
-
-## URL/인증 규칙
-
-> 이 섹션의 경로는 Base URL `http://13.209.84.21:8080` 기준으로 호출하면 됩니다.
 
 ### API Prefix
 
