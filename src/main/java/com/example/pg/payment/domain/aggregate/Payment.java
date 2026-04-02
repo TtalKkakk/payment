@@ -94,16 +94,15 @@ public class Payment {
     @JoinColumn(name = "card_company_id", nullable = false)
     private CardCompany cardCompany;
 
-
-    public Payment(PaymentId paymentId,
-                   String merchantId,
-                   long amount,
-                   String merchantOrderId,
-                   String orderName,
-                   String customerEmail,
-                   String customerName,
-                   String callbackUrl,
-                   CardCompany cardCompany) {
+    protected Payment(PaymentId paymentId,
+                      String merchantId,
+                      long amount,
+                      String merchantOrderId,
+                      String orderName,
+                      String customerEmail,
+                      String customerName,
+                      String callbackUrl,
+                      CardCompany cardCompany) {
         this.id = paymentId.getValue();
         this.merchantId = new PaymentMerchantId(merchantId);
         this.amount = new PaymentAmount(amount);
@@ -117,6 +116,29 @@ public class Payment {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
+
+    public static Payment create(PaymentId paymentId,
+                                 String merchantId,
+                                 long amount,
+                                 String merchantOrderId,
+                                 String orderName,
+                                 String customerEmail,
+                                 String customerName,
+                                 String callbackUrl,
+                                 CardCompany cardCompany) {
+        return new Payment(
+                paymentId,
+                merchantId,
+                amount,
+                merchantOrderId,
+                orderName,
+                customerEmail,
+                customerName,
+                callbackUrl,
+                cardCompany
+        );
+    }
+
     public void startAuthorization() {
         if (status != PaymentStatus.READY) {
             throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제 승인 시작 불가: " + status);

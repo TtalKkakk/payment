@@ -62,7 +62,7 @@ public class PaymentService {
         log.debug("[Payment] createPayment start merchantId={} amount={} cardCompanyCode={}", merchantId, amount, cardCompanyCode);
         PaymentId paymentId = PaymentId.generate();
         CardCompany cardCompany = cardCompanyPort.getCardCompanyByCode(cardCompanyCode);
-        Payment payment = new Payment(
+        Payment payment = Payment.create(
                 paymentId,
                 merchantId,
                 amount,
