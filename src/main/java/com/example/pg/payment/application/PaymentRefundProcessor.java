@@ -36,14 +36,22 @@ public class PaymentRefundProcessor {
             PaymentRefundResponse result = port.requestRefund(payment.getId());
 
             if (result.success()) {
-                payment.completeCancellation();
-                eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.CANCELED));
-                log.info("[Payment] event=Canceled paymentId={}", paymentIdValue);
+                int updated = paymentRepository.markCanceled(paymentIdValue);
+                if (updated == 1) {
+                    eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.CANCELED));
+                    log.info("[Payment] event=Canceled paymentId={}", paymentIdValue);
+                } else {
+                    log.warn("[Payment] skip cancelSuccess due to status race paymentId={}", paymentIdValue);
+                }
             } else {
-                payment.markCancellationFailed();
-                eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.CANCEL_FAILED));
-                log.warn("[Payment] event=RefundRequestFailed paymentId={} status=CANCEL_FAILED resultCode={} message={}",
-                        paymentIdValue, result.resultCode(), result.message());
+                int updated = paymentRepository.markCancelFailed(paymentIdValue);
+                if (updated == 1) {
+                    eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.CANCEL_FAILED));
+                    log.warn("[Payment] event=RefundRequestFailed paymentId={} status=CANCEL_FAILED resultCode={} message={}",
+                            paymentIdValue, result.resultCode(), result.message());
+                } else {
+                    log.warn("[Payment] skip cancelFail due to status race paymentId={}", paymentIdValue);
+                }
             }
         });
     }

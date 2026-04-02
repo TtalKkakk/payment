@@ -15,6 +15,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -44,19 +46,29 @@ public class PaymentAuthorizationProcessor {
             );
 
             if (result.success()) {
-                payment.authorizeSuccess(
+                LocalDateTime approvedAt = result.approvedAt();
+                int updated = paymentRepository.markAuthorized(
+                        paymentIdValue,
                         result.approvalNumber(),
                         result.transactionId(),
-                        result.approvedAt()
+                        approvedAt != null ? approvedAt : LocalDateTime.now()
                 );
-                eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.AUTHORIZED));
-                log.info("[Payment] event=Authorized paymentId={} approvalNumber={} transactionId={}",
-                        paymentIdValue, result.approvalNumber(), result.transactionId());
+                if (updated == 1) {
+                    eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.AUTHORIZED));
+                    log.info("[Payment] event=Authorized paymentId={} approvalNumber={} transactionId={}",
+                            paymentIdValue, result.approvalNumber(), result.transactionId());
+                } else {
+                    log.warn("[Payment] skip authorizeSuccess due to status race paymentId={}", paymentIdValue);
+                }
             } else {
-                payment.authorizeFail();
-                eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.AUTHORIZE_FAILED));
-                log.info("[Payment] event=Failed paymentId={} resultCode={} message={}",
-                        paymentIdValue, result.resultCode(), result.message());
+                int updated = paymentRepository.markAuthorizeFailed(paymentIdValue);
+                if (updated == 1) {
+                    eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.AUTHORIZE_FAILED));
+                    log.info("[Payment] event=Failed paymentId={} resultCode={} message={}",
+                            paymentIdValue, result.resultCode(), result.message());
+                } else {
+                    log.warn("[Payment] skip authorizeFail due to status race paymentId={}", paymentIdValue);
+                }
             }
         });
     }

@@ -29,6 +29,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Set;
 import java.util.Optional;
 
 @Slf4j
@@ -88,12 +89,14 @@ public class PaymentService {
     public void startAuthorization(String paymentIdValue, String billingKey) {
         log.debug("[Payment] startAuthorization start paymentId={}", paymentIdValue);
 
-        Payment payment = paymentRepository.load(PaymentId.from(paymentIdValue))
-                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentIdValue));
+        int updated = paymentRepository.transitionStatus(paymentIdValue, PaymentStatus.READY, PaymentStatus.AUTHORIZING);
+        if (updated != 1) {
+            PaymentStatus current = paymentRepository.load(PaymentId.from(paymentIdValue))
+                    .map(Payment::getStatus)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentIdValue));
+            throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제 승인 시작 불가: " + current);
+        }
 
-        payment.startAuthorization();
-
-        // 트랜잭션 커밋 후 비동기 승인 처리 (커밋 전 호출 시 DB에 AUTHORIZING이 반영되기 전에 조회되어 상태가 바뀌지 않는 문제 방지)
         eventPublisher.publishEvent(AuthorizationStartedEvent.from(paymentIdValue, billingKey));
         log.debug("[Payment] startAuthorization committed paymentId={}", paymentIdValue);
     }
@@ -101,9 +104,7 @@ public class PaymentService {
     /** Tx2(승인 시작) 실패 시 보상: READY 결제를 ABORTED로 무효화. 별도 트랜잭션으로 실행 */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void compensateCreationFailure(String paymentId) {
-        paymentRepository.findByIdAndStatus(paymentId, PaymentStatus.READY)
-                .ifPresent(Payment::markAsAborted);
-        // 재시도 처리
+        paymentRepository.markAbortedIfReady(paymentId);
     }
 
     /**
@@ -120,7 +121,17 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentIdValue);
         }
 
-        payment.startCancellation();
+        int updated = paymentRepository.transitionStatusFromSet(
+                paymentIdValue,
+                Set.of(PaymentStatus.AUTHORIZED, PaymentStatus.CANCEL_FAILED),
+                PaymentStatus.CANCELLING
+        );
+        if (updated != 1) {
+            PaymentStatus current = paymentRepository.load(PaymentId.from(paymentIdValue))
+                    .map(Payment::getStatus)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND, paymentIdValue));
+            throw new BusinessException(ErrorCode.PAYMENT_INVALID_STATUS, "결제 취소 시작 불가: " + current);
+        }
 
         eventPublisher.publishEvent(CancellationStartedEvent.from(paymentIdValue));
         log.debug("[Payment] startCancellation committed paymentId={}", paymentIdValue);
