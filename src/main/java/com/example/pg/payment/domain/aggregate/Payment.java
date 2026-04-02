@@ -28,22 +28,28 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 결제 애그리거트 (카드 결제 전용)
- * 영수증 발급·거래 추적을 위한 가맹점 주문정보·고객정보를 보관한다.
+ * 결제 애그리거트 (카드 결제 전용).
+ * 가맹점·주문번호·금액·카드사는 생성 시 고정({@code updatable = false}). 이후 변경은 상태 전이·승인·실패 스냅샷 등 도메인 규칙에 따른 갱신뿐이다.
  */
 @Entity
-@Table(name = "payments")
+@Table(
+        name = "payments",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_payments_merchant_id_merchant_order_id",
+                columnNames = {"merchant_id", "merchant_order_id"}
+        )
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Payment {
     @Getter
     @Id
     private String id;
 
-    @Column(nullable = false, length = 36, name = "merchant_id")
+    @Column(nullable = false, length = 36, name = "merchant_id", updatable = false)
     @Convert(converter = PaymentMerchantIdConverter.class)
     private PaymentMerchantId merchantId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     @Convert(converter = PaymentAmountConverter.class)
     private PaymentAmount amount;
 
@@ -52,7 +58,7 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
-    @Column(length = 100, name = "merchant_order_id", nullable = false)
+    @Column(length = 100, name = "merchant_order_id", nullable = false, updatable = false)
     @Convert(converter = PaymentMerchantOrderIdConverter.class)
     private PaymentMerchantOrderId merchantOrderId;
 
@@ -113,7 +119,7 @@ public class Payment {
 
     @Getter
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "card_company_id", nullable = false)
+    @JoinColumn(name = "card_company_id", nullable = false, updatable = false)
     private CardCompany cardCompany;
 
     protected Payment(PaymentId paymentId,
