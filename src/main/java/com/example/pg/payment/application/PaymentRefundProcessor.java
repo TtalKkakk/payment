@@ -2,6 +2,8 @@ package com.example.pg.payment.application;
 
 import com.example.pg.card_company.util.CardCompanyPortRegistry;
 import com.example.pg.card_company.presentation.CardCompanyConnect;
+import com.example.pg.payment.domain.aggregate.Payment;
+import com.example.pg.payment.domain.enumerate.PaymentFailureCategory;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
@@ -13,6 +15,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 /**
  * 카드사에 환불(취소) 요청을 비동기로 수행하고 결과를 결제 상태에 반영한다.
@@ -31,28 +35,68 @@ public class PaymentRefundProcessor {
     public void processRefund(String paymentIdValue) {
         PaymentId paymentId = PaymentId.from(paymentIdValue);
 
-        paymentRepository.load(paymentId).ifPresent(payment -> {
-            CardCompanyConnect port = portRegistry.getPortOrThrow(payment.getCardCompany().getCode());
-            PaymentRefundResponse result = port.requestRefund(payment.getId());
+        paymentRepository.load(paymentId).ifPresent(payment -> runRefund(paymentIdValue, payment));
+    }
 
-            if (result.success()) {
-                int updated = paymentRepository.markCanceled(paymentIdValue);
-                if (updated == 1) {
-                    eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.CANCELED));
-                    log.info("[Payment] event=Canceled paymentId={}", paymentIdValue);
-                } else {
-                    log.warn("[Payment] skip cancelSuccess due to status race paymentId={}", paymentIdValue);
-                }
-            } else {
-                int updated = paymentRepository.markCancelFailed(paymentIdValue);
-                if (updated == 1) {
-                    eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.CANCEL_FAILED));
-                    log.warn("[Payment] event=RefundRequestFailed paymentId={} status=CANCEL_FAILED resultCode={} message={}",
-                            paymentIdValue, result.resultCode(), result.message());
-                } else {
-                    log.warn("[Payment] skip cancelFail due to status race paymentId={}", paymentIdValue);
-                }
-            }
-        });
+    private void runRefund(String paymentIdValue, Payment payment) {
+        CardCompanyConnect port = portRegistry.getPortOrThrow(payment.getCardCompany().getCode());
+
+        try {
+            PaymentRefundResponse result = port.requestRefund(payment.getId());
+            onRefundCallReturned(paymentIdValue, result);
+        } catch (Exception e) {
+            onRefundCallThrew(paymentIdValue, e);
+        }
+    }
+
+    private void onRefundCallReturned(String paymentIdValue, PaymentRefundResponse result) {
+        if (result.success()) {
+            applyCancelSuccess(paymentIdValue);
+            return;
+        }
+        applyCancelBusinessFailure(paymentIdValue, result);
+    }
+
+    private void applyCancelSuccess(String paymentIdValue) {
+        int updated = paymentRepository.markCanceled(paymentIdValue);
+        if (updated != 1) {
+            log.warn("[Payment] skip cancelSuccess due to status race paymentId={}", paymentIdValue);
+            return;
+        }
+        eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.CANCELED));
+        log.info("[Payment] event=Canceled paymentId={}", paymentIdValue);
+    }
+
+    private void applyCancelBusinessFailure(String paymentIdValue, PaymentRefundResponse result) {
+        int updated = paymentRepository.markCancelFailed(
+                paymentIdValue,
+                PaymentFailureCategory.BUSINESS,
+                PaymentFailureSnapshotSupport.normalizeCode(result.resultCode()),
+                PaymentFailureSnapshotSupport.truncateMessage(result.message()),
+                LocalDateTime.now()
+        );
+        if (updated != 1) {
+            log.warn("[Payment] skip cancelFail due to status race paymentId={}", paymentIdValue);
+            return;
+        }
+        eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.CANCEL_FAILED));
+        log.warn("[Payment] event=RefundRequestFailed paymentId={} status=CANCEL_FAILED resultCode={} message={}",
+                paymentIdValue, result.resultCode(), result.message());
+    }
+
+    private void onRefundCallThrew(String paymentIdValue, Exception e) {
+        int updated = paymentRepository.markCancelFailed(
+                paymentIdValue,
+                PaymentFailureCategory.TECHNICAL,
+                "PG_TECHNICAL",
+                PaymentFailureSnapshotSupport.truncateMessage(PaymentFailureSnapshotSupport.technicalExceptionSummary(e)),
+                LocalDateTime.now()
+        );
+        if (updated != 1) {
+            log.warn("[Payment] skip cancelFail(technical) due to status race paymentId={}", paymentIdValue, e);
+            return;
+        }
+        eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.CANCEL_FAILED));
+        log.warn("[Payment] event=RefundFailed(technical) paymentId={}", paymentIdValue, e);
     }
 }

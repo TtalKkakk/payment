@@ -18,7 +18,11 @@ public record PaymentDetailResponse(
         String customerEmail,
         String customerName,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        String lastFailureCategory,
+        String lastFailureCode,
+        String lastFailureMessage,
+        LocalDateTime lastFailureAt
 ) {
     public static PaymentDetailResponse from(Payment payment) {
         return new PaymentDetailResponse(
@@ -31,7 +35,11 @@ public record PaymentDetailResponse(
                 payment.getCustomerEmail(),
                 payment.getCustomerName(),
                 payment.getCreatedAt(),
-                payment.getUpdatedAt()
+                payment.getUpdatedAt(),
+                payment.getLastFailureCategory() == null ? null : payment.getLastFailureCategory().name(),
+                payment.getLastFailureCode(),
+                payment.getLastFailureMessage(),
+                payment.getLastFailureAt()
         );
     }
 }

@@ -16,6 +16,7 @@ import com.example.pg.payment.domain.converter.PaymentCustomerEmailConverter;
 import com.example.pg.payment.domain.converter.PaymentCustomerNameConverter;
 import com.example.pg.payment.domain.converter.PaymentCallbackUrlConverter;
 import com.example.pg.payment.domain.converter.PaymentAmountConverter;
+import com.example.pg.payment.domain.enumerate.PaymentFailureCategory;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
@@ -82,6 +83,27 @@ public class Payment {
     @Getter
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
+
+    /**
+     * 마지막 실패 스냅샷({@link PaymentStatus#AUTHORIZE_FAILED}, {@link PaymentStatus#CANCEL_FAILED} 등 설정 시 갱신).
+     * 승인/취소 성공 시에는 DB 업데이트로 초기화된다.
+     */
+    @Getter
+    @Enumerated(EnumType.STRING)
+    @Column(name = "last_failure_category", length = 20)
+    private PaymentFailureCategory lastFailureCategory;
+
+    @Getter
+    @Column(name = "last_failure_code", length = 100)
+    private String lastFailureCode;
+
+    @Getter
+    @Column(name = "last_failure_message", length = 2000)
+    private String lastFailureMessage;
+
+    @Getter
+    @Column(name = "last_failure_at")
+    private LocalDateTime lastFailureAt;
 
     @Getter
     private LocalDateTime createdAt;

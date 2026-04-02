@@ -15,7 +15,11 @@ public record PaymentWebhookDto(
         String merchantOrderId,
         long amount,
         String orderName,
-        LocalDateTime occurredAt
+        LocalDateTime occurredAt,
+        String lastFailureCategory,
+        String lastFailureCode,
+        String lastFailureMessage,
+        LocalDateTime lastFailureAt
 ) {
 
     public static PaymentWebhookDto from(Payment payment) {
@@ -26,7 +30,11 @@ public record PaymentWebhookDto(
                 payment.getMerchantOrderId(),
                 payment.getAmount(),
                 payment.getOrderName(),
-                LocalDateTime.now()
+                LocalDateTime.now(),
+                payment.getLastFailureCategory() == null ? null : payment.getLastFailureCategory().name(),
+                payment.getLastFailureCode(),
+                payment.getLastFailureMessage(),
+                payment.getLastFailureAt()
         );
     }
 }

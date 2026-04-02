@@ -4,6 +4,8 @@ import com.example.pg.card_company.util.CardCompanyPortRegistry;
 import com.example.pg.card_company.presentation.CardCompanyConnect;
 import com.example.pg.payment.presentation.dto.PaymentApproveResponse;
 import com.example.pg.card_company.domain.aggergate.CardCompany;
+import com.example.pg.payment.domain.aggregate.Payment;
+import com.example.pg.payment.domain.enumerate.PaymentFailureCategory;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
@@ -35,42 +37,81 @@ public class PaymentAuthorizationProcessor {
     public void processAuthorization(String paymentIdValue, String billingKey) {
         PaymentId paymentId = PaymentId.from(paymentIdValue);
 
-        paymentRepository.load(paymentId).ifPresent(payment -> {
-            CardCompany cardCompany = payment.getCardCompany();
-            CardCompanyConnect port = portRegistry.getPortOrThrow(cardCompany.getCode());
+        paymentRepository.load(paymentId).ifPresent(payment ->
+                runAuthorization(paymentIdValue, billingKey, payment));
+    }
 
+    private void runAuthorization(String paymentIdValue, String billingKey, Payment payment) {
+        CardCompany cardCompany = payment.getCardCompany();
+        CardCompanyConnect port = portRegistry.getPortOrThrow(cardCompany.getCode());
+
+        try {
             PaymentApproveResponse result = port.approve(
                     payment.getId(),
                     payment.getAmount(),
                     billingKey
             );
+            onApproveCallReturned(paymentIdValue, result);
+        } catch (Exception e) {
+            onApproveCallThrew(paymentIdValue, e);
+        }
+    }
 
-            if (result.success()) {
-                LocalDateTime approvedAt = result.approvedAt();
-                int updated = paymentRepository.markAuthorized(
-                        paymentIdValue,
-                        result.approvalNumber(),
-                        result.transactionId(),
-                        approvedAt != null ? approvedAt : LocalDateTime.now()
-                );
-                if (updated == 1) {
-                    eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.AUTHORIZED));
-                    log.info("[Payment] event=Authorized paymentId={} approvalNumber={} transactionId={}",
-                            paymentIdValue, result.approvalNumber(), result.transactionId());
-                } else {
-                    log.warn("[Payment] skip authorizeSuccess due to status race paymentId={}", paymentIdValue);
-                }
-            } else {
-                int updated = paymentRepository.markAuthorizeFailed(paymentIdValue);
-                if (updated == 1) {
-                    eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.AUTHORIZE_FAILED));
-                    log.info("[Payment] event=Failed paymentId={} resultCode={} message={}",
-                            paymentIdValue, result.resultCode(), result.message());
-                } else {
-                    log.warn("[Payment] skip authorizeFail due to status race paymentId={}", paymentIdValue);
-                }
-            }
-        });
+    private void onApproveCallReturned(String paymentIdValue, PaymentApproveResponse result) {
+        if (result.success()) {
+            applyAuthorizeSuccess(paymentIdValue, result);
+            return;
+        }
+        applyAuthorizeBusinessFailure(paymentIdValue, result);
+    }
+
+    private void applyAuthorizeSuccess(String paymentIdValue, PaymentApproveResponse result) {
+        LocalDateTime approvedAt = result.approvedAt();
+        int updated = paymentRepository.markAuthorized(
+                paymentIdValue,
+                result.approvalNumber(),
+                result.transactionId(),
+                approvedAt != null ? approvedAt : LocalDateTime.now()
+        );
+        if (updated != 1) {
+            log.warn("[Payment] skip authorizeSuccess due to status race paymentId={}", paymentIdValue);
+            return;
+        }
+        eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.AUTHORIZED));
+        log.info("[Payment] event=Authorized paymentId={} approvalNumber={} transactionId={}",
+                paymentIdValue, result.approvalNumber(), result.transactionId());
+    }
+
+    private void applyAuthorizeBusinessFailure(String paymentIdValue, PaymentApproveResponse result) {
+        int updated = paymentRepository.markAuthorizeFailed(
+                paymentIdValue,
+                PaymentFailureCategory.BUSINESS,
+                PaymentFailureSnapshotSupport.normalizeCode(result.resultCode()),
+                PaymentFailureSnapshotSupport.truncateMessage(result.message()),
+                LocalDateTime.now()
+        );
+        if (updated != 1) {
+            log.warn("[Payment] skip authorizeFail due to status race paymentId={}", paymentIdValue);
+            return;
+        }
+        eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.AUTHORIZE_FAILED));
+        log.info("[Payment] event=Failed paymentId={} resultCode={} message={}",
+                paymentIdValue, result.resultCode(), result.message());
+    }
+
+    private void onApproveCallThrew(String paymentIdValue, Exception e) {
+        int updated = paymentRepository.markAuthorizeFailed(
+                paymentIdValue,
+                PaymentFailureCategory.TECHNICAL,
+                "PG_TECHNICAL",
+                PaymentFailureSnapshotSupport.truncateMessage(PaymentFailureSnapshotSupport.technicalExceptionSummary(e)),
+                LocalDateTime.now()
+        );
+        if (updated != 1) {
+            log.warn("[Payment] skip authorizeFail(technical) due to status race paymentId={}", paymentIdValue, e);
+            return;
+        }
+        eventPublisher.publishEvent(PaymentStatusChangedEvent.from(paymentIdValue, PaymentStatus.AUTHORIZE_FAILED));
+        log.warn("[Payment] event=Failed(technical) paymentId={}", paymentIdValue, e);
     }
 }
-
