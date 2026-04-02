@@ -9,6 +9,7 @@ import com.example.pg.payment.domain.enumerate.PaymentFailureCategory;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
+import com.example.pg.payment.infrastructure.lock.PaymentProcessDistributedLock;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class PaymentAuthorizationProcessor {
     private final PaymentRepository paymentRepository;
     private final CardCompanyPortRegistry portRegistry;
     private final ApplicationEventPublisher eventPublisher;
+    private final PaymentProcessDistributedLock processLock;
 
     /**
      * 카드사에 결제 승인 요청(POST /api/pg/payments/approve)을 보내고 결과를 반영한다.
@@ -35,10 +37,11 @@ public class PaymentAuthorizationProcessor {
     @Async
     @Transactional
     public void processAuthorization(String paymentIdValue, String billingKey) {
-        PaymentId paymentId = PaymentId.from(paymentIdValue);
-
-        paymentRepository.load(paymentId).ifPresent(payment ->
-                runAuthorization(paymentIdValue, billingKey, payment));
+        processLock.runWithAuthorizeLock(paymentIdValue, () -> {
+            PaymentId paymentId = PaymentId.from(paymentIdValue);
+            paymentRepository.load(paymentId).ifPresent(payment ->
+                    runAuthorization(paymentIdValue, billingKey, payment));
+        });
     }
 
     private void runAuthorization(String paymentIdValue, String billingKey, Payment payment) {

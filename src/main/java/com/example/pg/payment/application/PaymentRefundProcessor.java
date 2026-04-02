@@ -7,6 +7,7 @@ import com.example.pg.payment.domain.enumerate.PaymentFailureCategory;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.event.PaymentStatusChangedEvent;
 import com.example.pg.payment.domain.vo.PaymentId;
+import com.example.pg.payment.infrastructure.lock.PaymentProcessDistributedLock;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
 import com.example.pg.payment.presentation.dto.PaymentRefundResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,13 +30,15 @@ public class PaymentRefundProcessor {
     private final PaymentRepository paymentRepository;
     private final CardCompanyPortRegistry portRegistry;
     private final ApplicationEventPublisher eventPublisher;
+    private final PaymentProcessDistributedLock processLock;
 
     @Async
     @Transactional
     public void processRefund(String paymentIdValue) {
-        PaymentId paymentId = PaymentId.from(paymentIdValue);
-
-        paymentRepository.load(paymentId).ifPresent(payment -> runRefund(paymentIdValue, payment));
+        processLock.runWithRefundLock(paymentIdValue, () -> {
+            PaymentId paymentId = PaymentId.from(paymentIdValue);
+            paymentRepository.load(paymentId).ifPresent(payment -> runRefund(paymentIdValue, payment));
+        });
     }
 
     private void runRefund(String paymentIdValue, Payment payment) {
