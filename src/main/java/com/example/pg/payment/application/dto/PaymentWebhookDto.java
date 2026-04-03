@@ -16,6 +16,7 @@ public record PaymentWebhookDto(
         long amount,
         String orderName,
         LocalDateTime occurredAt,
+        String idempotencyKey,
         String lastFailureCategory,
         String lastFailureCode,
         String lastFailureMessage,
@@ -23,6 +24,8 @@ public record PaymentWebhookDto(
 ) {
 
     public static PaymentWebhookDto from(Payment payment) {
+        LocalDateTime keyAt = payment.getUpdatedAt() != null ? payment.getUpdatedAt() : payment.getCreatedAt();
+        String idempotencyKey = payment.getId() + ":" + payment.getStatus().name() + ":" + (keyAt != null ? keyAt : "UNKNOWN");
         return new PaymentWebhookDto(
                 payment.getId(),
                 payment.getStatus().name(),
@@ -31,6 +34,7 @@ public record PaymentWebhookDto(
                 payment.getAmount(),
                 payment.getOrderName(),
                 LocalDateTime.now(),
+                idempotencyKey,
                 payment.getLastFailureCategory() == null ? null : payment.getLastFailureCategory().name(),
                 payment.getLastFailureCode(),
                 payment.getLastFailureMessage(),
