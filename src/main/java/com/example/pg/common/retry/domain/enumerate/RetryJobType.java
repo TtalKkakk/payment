@@ -6,6 +6,7 @@ package com.example.pg.common.retry.domain.enumerate;
  */
 public enum RetryJobType {
     PAYMENT_COMPENSATE_CREATION_FAILURE,
+    PAYMENT_REFUND_RETRY,
     WEBHOOK_DELIVERY
 }
 

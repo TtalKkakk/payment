@@ -7,5 +7,7 @@ public final class PaymentRetryJobTypes {
     }
 
     public static final String PAYMENT_COMPENSATE_CREATION_FAILURE = RetryJobType.PAYMENT_COMPENSATE_CREATION_FAILURE.name();
+
+    public static final String PAYMENT_REFUND_RETRY = RetryJobType.PAYMENT_REFUND_RETRY.name();
 }
 
