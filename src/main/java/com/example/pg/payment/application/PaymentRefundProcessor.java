@@ -58,16 +58,25 @@ public class PaymentRefundProcessor {
 
     private void runRefundRetryLocked(String paymentIdValue) {
         PaymentId paymentId = PaymentId.from(paymentIdValue);
-        Payment payment = paymentRepository.load(paymentId)
-                .orElseThrow(() -> new NonRetryableJobException("Payment not found: " + paymentIdValue));
+        Payment initial = loadPaymentOrThrow(paymentId, paymentIdValue);
 
-        if (payment.getStatus() == PaymentStatus.CANCELED) {
+        if (initial.getStatus() == PaymentStatus.CANCELED) {
             log.info("[Payment] refund retry skip already CANCELED paymentId={}", paymentIdValue);
             return;
         }
 
-        if (payment.getStatus() == PaymentStatus.CANCEL_FAILED) {
-            if (payment.getLastFailureCategory() == PaymentFailureCategory.BUSINESS) {
+        if (!prepareCancellingForRefundRetry(initial, paymentIdValue)) {
+            return;
+        }
+
+        Payment latest = loadPaymentOrThrow(paymentId, paymentIdValue);
+        applyRefundRetryAfterReload(latest, paymentIdValue);
+    }
+
+    /** CANCEL_FAILED → CANCELLING CAS(또는 이미 CANCELLING). CAS 실패 시 재조회 후 후속 처리까지 하면 false. */
+    private boolean prepareCancellingForRefundRetry(Payment initial, String paymentIdValue) {
+        if (initial.getStatus() == PaymentStatus.CANCEL_FAILED) {
+            if (initial.getLastFailureCategory() == PaymentFailureCategory.BUSINESS) {
                 throw new NonRetryableJobException(
                         "Refund retry not applicable for BUSINESS failure paymentId=" + paymentIdValue
                 );
@@ -78,47 +87,37 @@ public class PaymentRefundProcessor {
                     PaymentStatus.CANCELLING
             );
             if (updated != 1) {
-                handleRefundRetryTransitionRace(paymentIdValue);
-                return;
+                Payment reconciled = loadPaymentOrThrow(PaymentId.from(paymentIdValue), paymentIdValue);
+                applyRefundRetryAfterReload(reconciled, paymentIdValue);
+                return false;
             }
-        } else if (payment.getStatus() != PaymentStatus.CANCELLING) {
+            return true;
+        }
+        if (initial.getStatus() != PaymentStatus.CANCELLING) {
             throw new NonRetryableJobException(
+                    "Refund retry unexpected status=" + initial.getStatus() + " paymentId=" + paymentIdValue
+            );
+        }
+        return true;
+    }
+
+    /** 재로딩 시점에 허용되는 상태(CANCELED / CANCELLING / 경합 CANCEL_FAILED)만 처리. */
+    private void applyRefundRetryAfterReload(Payment payment, String paymentIdValue) {
+        switch (payment.getStatus()) {
+            case CANCELED -> log.info("[Payment] refund retry skip already CANCELED paymentId={}", paymentIdValue);
+            case CANCELLING -> runRefund(paymentIdValue, payment);
+            case CANCEL_FAILED -> throw new IllegalStateException(
+                    "Concurrent refund retry; reschedule paymentId=" + paymentIdValue
+            );
+            default -> throw new NonRetryableJobException(
                     "Refund retry unexpected status=" + payment.getStatus() + " paymentId=" + paymentIdValue
             );
         }
-
-        Payment latest = paymentRepository.load(paymentId)
-                .orElseThrow(() -> new NonRetryableJobException("Payment not found after prepare: " + paymentIdValue));
-        if (latest.getStatus() == PaymentStatus.CANCELED) {
-            log.info("[Payment] refund retry skip already CANCELED paymentId={}", paymentIdValue);
-            return;
-        }
-        if (latest.getStatus() != PaymentStatus.CANCELLING) {
-            throw new NonRetryableJobException(
-                    "Refund retry expected CANCELLING, got " + latest.getStatus() + " paymentId=" + paymentIdValue
-            );
-        }
-        runRefund(paymentIdValue, latest);
     }
 
-    private void handleRefundRetryTransitionRace(String paymentIdValue) {
-        PaymentId paymentId = PaymentId.from(paymentIdValue);
-        Payment p = paymentRepository.load(paymentId)
+    private Payment loadPaymentOrThrow(PaymentId paymentId, String paymentIdValue) {
+        return paymentRepository.load(paymentId)
                 .orElseThrow(() -> new NonRetryableJobException("Payment not found: " + paymentIdValue));
-        if (p.getStatus() == PaymentStatus.CANCELED) {
-            log.info("[Payment] refund retry race resolved as CANCELED paymentId={}", paymentIdValue);
-            return;
-        }
-        if (p.getStatus() == PaymentStatus.CANCELLING) {
-            runRefund(paymentIdValue, p);
-            return;
-        }
-        if (p.getStatus() == PaymentStatus.CANCEL_FAILED) {
-            throw new IllegalStateException("Concurrent refund retry; reschedule paymentId=" + paymentIdValue);
-        }
-        throw new NonRetryableJobException(
-                "Refund retry race unexpected status=" + p.getStatus() + " paymentId=" + paymentIdValue
-        );
     }
 
     private void runRefund(String paymentIdValue, Payment payment) {
