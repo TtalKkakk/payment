@@ -55,5 +55,54 @@ public interface RetryJobRepository extends JpaRepository<RetryJob, String> {
             @Param("lockToken") String lockToken,
             @Param("now") LocalDateTime now
     );
+
+    /**
+     * findDue/tryClaim에서 제외된 만료 PENDING 잡을 DEAD로 정리한다. 한 틱당 최대 {@code limit}건.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            UPDATE retry_jobs
+               SET status = 'DEAD',
+                   attempt_count = attempt_count + 1,
+                   last_error_message = :message,
+                   last_failed_at = :now,
+                   locked_by = NULL,
+                   locked_until = NULL,
+                   lock_token = NULL,
+                   updated_at = :now,
+                   version = version + 1
+             WHERE status = 'PENDING'
+               AND expires_at <= :now
+             LIMIT :limit
+            """, nativeQuery = true)
+    int markExpiredPendingAsDead(
+            @Param("now") LocalDateTime now,
+            @Param("message") String message,
+            @Param("limit") int limit
+    );
+
+    /**
+     * 워커 크래시 등으로 lease가 지난 RUNNING(또는 locked_until이 비어 있는 비정상 RUNNING)을 PENDING으로 되돌린다.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            UPDATE retry_jobs
+               SET status = 'PENDING',
+                   locked_by = NULL,
+                   locked_until = NULL,
+                   lock_token = NULL,
+                   last_error_message = :message,
+                   last_failed_at = :now,
+                   updated_at = :now,
+                   version = version + 1
+             WHERE status = 'RUNNING'
+               AND (locked_until IS NULL OR locked_until < :now)
+             LIMIT :limit
+            """, nativeQuery = true)
+    int reclaimStaleRunningJobs(
+            @Param("now") LocalDateTime now,
+            @Param("message") String message,
+            @Param("limit") int limit
+    );
 }
 
