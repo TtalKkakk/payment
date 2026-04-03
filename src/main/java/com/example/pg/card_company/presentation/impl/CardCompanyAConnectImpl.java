@@ -39,14 +39,9 @@ public class CardCompanyAConnectImpl implements CardCompanyConnect {
     public PaymentApproveResponse approve(String paymentId, long amount, String billingKeyToken) {
         String url = buildUrl(APPROVE_PATH);
         CardCompanyApproveRequest request = new CardCompanyApproveRequest(paymentId, amount, billingKeyToken);
-        try {
-            CardCompanyApproveResponse body = apiTemplate.postForObject(
-                    url, request, CardCompanyApproveResponse.class, "결제 승인");
-            return toApproveResult(body);
-        } catch (Exception e) {
-            log.warn("[CardCompany] CardCompany approve failed paymentId={} url={}", paymentId, url, e);
-            return PaymentApproveResponse.failure(paymentId, "E999", e.getMessage());
-        }
+        CardCompanyApproveResponse body = apiTemplate.postForObject(
+                url, request, CardCompanyApproveResponse.class, "결제 승인");
+        return toApproveResult(body);
     }
 
     @Override
@@ -76,17 +71,9 @@ public class CardCompanyAConnectImpl implements CardCompanyConnect {
     public PaymentRefundResponse requestRefund(String paymentId) {
         String url = buildUrl(REFUND_PATH);
         RefundRequest request = new RefundRequest(paymentId);
-        try {
-            PaymentRefundResponse body = apiTemplate.postForObject(
-                    url, request, PaymentRefundResponse.class, "환불");
-            if (body == null) {
-                return PaymentRefundResponse.failure(paymentId, "E999", "카드사 응답이 비어 있습니다.");
-            }
-            return toRefundResult(body);
-        } catch (Exception e) {
-            log.warn("[CardCompany] CardCompany refund failed paymentId={} url={}", paymentId, url, e);
-            return PaymentRefundResponse.failure(paymentId, "E999", e.getMessage());
-        }
+        PaymentRefundResponse body = apiTemplate.postForObject(
+                url, request, PaymentRefundResponse.class, "환불");
+        return toRefundResult(body);
     }
 
     private PaymentRefundResponse toRefundResult(PaymentRefundResponse body) {

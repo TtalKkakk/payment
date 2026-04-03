@@ -1,4 +1,4 @@
-package com.example.pg.common.webhook.retry.payload;
+package com.example.pg.common.retry.webhook.retry.payload;
 
 import java.util.Map;
 

@@ -1,8 +1,8 @@
-package com.example.pg.common.webhook.retry;
+package com.example.pg.common.retry.webhook.retry;
 
 import com.example.pg.common.retry.job.RetryJobService;
-import com.example.pg.common.webhook.retry.payload.WebhookDeliveryRetryPayload;
-import com.example.pg.common.webhook.retry.payload.WebhookRetryJobTypes;
+import com.example.pg.common.retry.webhook.retry.payload.WebhookDeliveryRetryPayload;
+import com.example.pg.common.retry.webhook.retry.payload.WebhookRetryJobTypes;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

@@ -1,9 +1,9 @@
 package com.example.pg.common.presentation.impl;
 
 import com.example.pg.common.exception.WebhookDeliveryExhaustedException;
-import com.example.pg.common.webhook.WebhookDeliveryExecutor;
+import com.example.pg.common.retry.webhook.WebhookDeliveryExecutor;
 import com.example.pg.common.presentation.FranchiseConnect;
-import com.example.pg.common.webhook.retry.WebhookRetryJobEnqueuer;
+import com.example.pg.common.retry.webhook.retry.WebhookRetryJobEnqueuer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

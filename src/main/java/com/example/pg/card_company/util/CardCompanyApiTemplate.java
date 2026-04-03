@@ -2,11 +2,13 @@ package com.example.pg.card_company.util;
 
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
+import com.example.pg.common.exception.CardCompanyTransientException;
 import com.example.pg.common.util.HttpOutbound;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 
 @Slf4j
 @Component
@@ -31,7 +33,12 @@ public class CardCompanyApiTemplate {
             }
             return body;
         } catch (HttpStatusCodeException e) {
+            if (e.getStatusCode().is5xxServerError()) {
+                throw new CardCompanyTransientException(operation + " 실패: " + e.getStatusCode(), e);
+            }
             throw errorParser.toBusinessException(e, operation);
+        } catch (ResourceAccessException e) {
+            throw new CardCompanyTransientException(operation + " 실패: " + e.getMessage(), e);
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {

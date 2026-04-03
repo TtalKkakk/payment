@@ -1,4 +1,4 @@
-package com.example.pg.common.webhook.retry.payload;
+package com.example.pg.common.retry.webhook.retry.payload;
 
 import com.example.pg.common.retry.domain.enumerate.RetryJobType;
 

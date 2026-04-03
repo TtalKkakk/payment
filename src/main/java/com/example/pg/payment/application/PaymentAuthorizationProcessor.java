@@ -1,5 +1,6 @@
 package com.example.pg.payment.application;
 
+import com.example.pg.common.retry.card_company.CardCompanyPaymentRetryExecutor;
 import com.example.pg.card_company.util.CardCompanyPortRegistry;
 import com.example.pg.card_company.presentation.CardCompanyConnect;
 import com.example.pg.payment.presentation.dto.PaymentApproveResponse;
@@ -29,6 +30,7 @@ public class PaymentAuthorizationProcessor {
     private final CardCompanyPortRegistry portRegistry;
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentProcessDistributedLock processLock;
+    private final CardCompanyPaymentRetryExecutor cardCompanyPaymentRetryExecutor;
 
     /**
      * 카드사에 결제 승인 요청(POST /api/pg/payments/approve)을 보내고 결과를 반영한다.
@@ -50,7 +52,8 @@ public class PaymentAuthorizationProcessor {
         CardCompanyConnect port = portRegistry.getPortOrThrow(cardCompany.getCode());
 
         try {
-            PaymentApproveResponse result = port.approve(
+            PaymentApproveResponse result = cardCompanyPaymentRetryExecutor.approve(
+                    port,
                     payment.getId(),
                     payment.getAmount(),
                     billingKey

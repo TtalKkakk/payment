@@ -1,4 +1,4 @@
-package com.example.pg.common.webhook;
+package com.example.pg.common.retry.webhook;
 
 import com.example.pg.common.exception.WebhookDeliveryExhaustedException;
 import com.example.pg.common.util.HttpOutbound;

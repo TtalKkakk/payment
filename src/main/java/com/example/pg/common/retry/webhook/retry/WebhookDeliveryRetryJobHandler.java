@@ -1,11 +1,11 @@
-package com.example.pg.common.webhook.retry;
+package com.example.pg.common.retry.webhook.retry;
 
 import com.example.pg.common.exception.NonRetryableJobException;
 import com.example.pg.common.retry.domain.aggregate.RetryJob;
 import com.example.pg.common.retry.handler.RetryJobHandler;
+import com.example.pg.common.retry.webhook.retry.payload.WebhookDeliveryRetryPayload;
+import com.example.pg.common.retry.webhook.retry.payload.WebhookRetryJobTypes;
 import com.example.pg.common.util.HttpOutbound;
-import com.example.pg.common.webhook.retry.payload.WebhookDeliveryRetryPayload;
-import com.example.pg.common.webhook.retry.payload.WebhookRetryJobTypes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

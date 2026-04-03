@@ -1,5 +1,6 @@
 package com.example.pg.payment.application;
 
+import com.example.pg.common.retry.card_company.CardCompanyPaymentRetryExecutor;
 import com.example.pg.card_company.util.CardCompanyPortRegistry;
 import com.example.pg.card_company.presentation.CardCompanyConnect;
 import com.example.pg.payment.domain.aggregate.Payment;
@@ -31,6 +32,7 @@ public class PaymentRefundProcessor {
     private final CardCompanyPortRegistry portRegistry;
     private final ApplicationEventPublisher eventPublisher;
     private final PaymentProcessDistributedLock processLock;
+    private final CardCompanyPaymentRetryExecutor cardCompanyPaymentRetryExecutor;
 
     @Async
     @Transactional
@@ -45,7 +47,7 @@ public class PaymentRefundProcessor {
         CardCompanyConnect port = portRegistry.getPortOrThrow(payment.getCardCompany().getCode());
 
         try {
-            PaymentRefundResponse result = port.requestRefund(payment.getId());
+            PaymentRefundResponse result = cardCompanyPaymentRetryExecutor.refund(port, payment.getId());
             onRefundCallReturned(paymentIdValue, result);
         } catch (Exception e) {
             onRefundCallThrew(paymentIdValue, e);

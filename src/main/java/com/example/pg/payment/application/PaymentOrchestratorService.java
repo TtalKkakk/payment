@@ -2,6 +2,7 @@ package com.example.pg.payment.application;
 
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
+import com.example.pg.payment.application.retry.PaymentRetryJobEnqueuer;
 import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.payment.presentation.dto.CreatePaymentRequest;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Service;
 public class PaymentOrchestratorService {
 
     private final PaymentService paymentService;
-    private final com.example.pg.payment.application.retry.PaymentRetryJobEnqueuer paymentRetryJobEnqueuer;
+    private final PaymentRetryJobEnqueuer paymentRetryJobEnqueuer;
 
     /**
      * 결제하기 단일 API: 트랜잭션 1(결제 생성 READY) + 트랜잭션 2(승인 요청 AUTHORIZING).
