@@ -47,6 +47,11 @@ services:
       # Flyway가 스키마를 관리하므로 Hibernate는 validate만 수행
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
 
+      # Flyway
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      SPRING_FLYWAY_BASELINE_VERSION: "1"
+
       # 카드 등록 세션 TTL
       APP_PAYMENT_CARD_REGISTER_SESSION_TTL_SECONDS: ${APP_PAYMENT_CARD_REGISTER_SESSION_TTL_SECONDS:-900}
 
