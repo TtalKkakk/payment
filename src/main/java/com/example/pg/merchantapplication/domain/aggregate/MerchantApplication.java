@@ -66,7 +66,7 @@ public class MerchantApplication {
     private PasswordHash passwordHash;
 
     @Getter
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Getter

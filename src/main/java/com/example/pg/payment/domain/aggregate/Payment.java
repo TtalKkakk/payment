@@ -112,6 +112,7 @@ public class Payment {
     private LocalDateTime lastFailureAt;
 
     @Getter
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Getter
