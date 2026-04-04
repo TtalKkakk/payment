@@ -15,12 +15,16 @@ import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.payment.domain.vo.PaymentMerchantId;
 import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
+import com.example.pg.idempotency.application.IdempotencyKeyService;
+import com.example.pg.payment.domain.vo.PaymentMerchantOrderId;
 import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
+import com.example.pg.payment.presentation.dto.CreatePaymentRequest;
 import com.example.pg.payment.presentation.dto.PaymentDetailResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +43,7 @@ public class PaymentService {
     private static final String HMAC_SHA256 = "HmacSHA256";
 
     private final PaymentRepository paymentRepository;
+    private final IdempotencyKeyService idempotencyKeyService;
     private final CardCompanyPort cardCompanyPort;
     private final ApplicationEventPublisher eventPublisher;
     private final MerchantPort merchantPort;
@@ -46,39 +51,38 @@ public class PaymentService {
     private final FranchiseConnect franchiseConnect;
 
     /**
-     * 트랜잭션 1: 결제 객체 생성 → 상태 READY.
-     * 트랜잭션 실패 시 가맹점에게 결제 생성 실패 및 사유 전달.
+     * Idempotency-Key가 있을 때 결제 행 생성. 동일 (가맹점, 키)에 다른 요청 지문이면 충돌.
+     * 동일 지문이면 기존 paymentId 반환(부분 실패 후 재시도 복구 포함).
      */
-
     @Transactional
-    public PaymentId createPayment(String merchantId,
-                                   long amount,
-                                   String merchantOrderId,
-                                   String orderName,
-                                   String customerEmail,
-                                   String customerName,
-                                   String callbackUrl,
-                                   String cardCompanyCode) {
-        log.debug("[Payment] createPayment start merchantId={} amount={} cardCompanyCode={}", merchantId, amount, cardCompanyCode);
-        PaymentId paymentId = PaymentId.generate();
-        CardCompany cardCompany = cardCompanyPort.getCardCompanyByCode(cardCompanyCode);
-        Payment payment = Payment.create(
-                paymentId,
+    public PaymentId createPaymentWithIdempotency(
+            String merchantId,
+            CreatePaymentRequest request,
+            String idempotencyKey,
+            String requestHash
+    ) {
+        String pid = idempotencyKeyService.resolve(
                 merchantId,
-                amount,
-                merchantOrderId,
-                orderName,
-                customerEmail,
-                customerName,
-                callbackUrl,
-                cardCompany
+                idempotencyKey,
+                requestHash,
+                () -> paymentRepository
+                        .findByMerchantAndMerchantOrderId(
+                                new PaymentMerchantId(merchantId),
+                                new PaymentMerchantOrderId(request.merchantOrderId())
+                        )
+                        .map(Payment::getId),
+                () -> createPaymentAndPublish(
+                        merchantId,
+                        request.amount(),
+                        request.merchantOrderId(),
+                        request.orderName(),
+                        request.customerEmail(),
+                        request.customerName(),
+                        request.callbackUrl(),
+                        request.cardCompanyCode()
+                ).getValue()
         );
-        paymentRepository.save(payment);
-
-        eventPublisher.publishEvent(PaymentCreatedEvent.from(payment.getId(), payment.getMerchantId(), payment.getAmount()));
-
-        log.debug("[Payment] createPayment committed paymentId={} merchantId={}", paymentId.getValue(), merchantId);
-        return paymentId;
+        return PaymentId.from(pid);
     }
 
     /**
@@ -195,6 +199,36 @@ public class PaymentService {
 
         franchiseConnect.send(callbackUrl, payloadJson, signature);
         log.info("[Payment] webhook sent paymentId={} status={}", payment.getId(), payment.getStatus());
+    }
+
+    private PaymentId createPaymentAndPublish(String merchantId,
+                                              long amount,
+                                              String merchantOrderId,
+                                              String orderName,
+                                              String customerEmail,
+                                              String customerName,
+                                              String callbackUrl,
+                                              String cardCompanyCode) {
+        log.debug("[Payment] createPayment start merchantId={} amount={} cardCompanyCode={}", merchantId, amount, cardCompanyCode);
+        PaymentId paymentId = PaymentId.generate();
+        CardCompany cardCompany = cardCompanyPort.getCardCompanyByCode(cardCompanyCode);
+        Payment payment = Payment.create(
+                paymentId,
+                merchantId,
+                amount,
+                merchantOrderId,
+                orderName,
+                customerEmail,
+                customerName,
+                callbackUrl,
+                cardCompany
+        );
+        paymentRepository.save(payment);
+
+        eventPublisher.publishEvent(PaymentCreatedEvent.from(payment.getId(), payment.getMerchantId(), payment.getAmount()));
+
+        log.debug("[Payment] createPayment committed paymentId={} merchantId={}", paymentId.getValue(), merchantId);
+        return paymentId;
     }
 
     private static String computeHmacSha256(String data, String secret) throws Exception {

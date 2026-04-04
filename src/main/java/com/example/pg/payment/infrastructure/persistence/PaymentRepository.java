@@ -5,6 +5,7 @@ import com.example.pg.payment.domain.enumerate.PaymentFailureCategory;
 import com.example.pg.payment.domain.enumerate.PaymentStatus;
 import com.example.pg.payment.domain.vo.PaymentId;
 import com.example.pg.payment.domain.vo.PaymentMerchantId;
+import com.example.pg.payment.domain.vo.PaymentMerchantOrderId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -30,6 +31,16 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
      * 가맹점별 결제 단건 조회. (GET /payments/{id} - 해당 가맹점 소유만 허용)
      */
     Optional<Payment> findByMerchantIdAndId(PaymentMerchantId merchantId, String id);
+
+    @Query("""
+            SELECT p FROM Payment p
+             WHERE p.merchantId = :merchantId
+               AND p.merchantOrderId = :merchantOrderId
+            """)
+    Optional<Payment> findByMerchantAndMerchantOrderId(
+            @Param("merchantId") PaymentMerchantId merchantId,
+            @Param("merchantOrderId") PaymentMerchantOrderId merchantOrderId
+    );
 
     /**
      * id + status로 조회. (보상: READY인 결제만 ABORTED 처리)

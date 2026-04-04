@@ -4,10 +4,13 @@ import com.example.pg.common.exception.BusinessException;
 import com.example.pg.common.exception.ErrorCode;
 import com.example.pg.payment.application.retry.PaymentRetryJobEnqueuer;
 import com.example.pg.payment.domain.vo.PaymentId;
+import com.example.pg.payment.infrastructure.persistence.PaymentRepository;
 import com.example.pg.payment.presentation.dto.CreatePaymentRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 /**
  * 결제 생성(Tx1) + 승인 시작(Tx2) 오케스트레이션.
@@ -24,23 +27,15 @@ public class PaymentOrchestratorService {
     private final PaymentService paymentService;
     private final PaymentRetryJobEnqueuer paymentRetryJobEnqueuer;
 
-    /**
-     * 결제하기 단일 API: 트랜잭션 1(결제 생성 READY) + 트랜잭션 2(승인 요청 AUTHORIZING).
-     * Tx1 실패 시 PAYMENT_CREATION_FAILED, Tx2 실패 시 보상(ABORTED) 후 AUTHORIZATION_START_FAILED.
-     */
-    public PaymentId createPaymentAndStartAuthorization(String merchantId, CreatePaymentRequest request) {
+    public PaymentId createPaymentAndStartAuthorization(
+            String merchantId,
+            CreatePaymentRequest request,
+            String idempotencyKey
+    ) {
         PaymentId paymentId;
         try {
-            paymentId = paymentService.createPayment(
-                    merchantId,
-                    request.amount(),
-                    request.merchantOrderId(),
-                    request.orderName(),
-                    request.customerEmail(),
-                    request.customerName(),
-                    request.callbackUrl(),
-                    request.cardCompanyCode()
-            );
+            String hash = PaymentIdempotencyFingerprint.sha256Hex(request);
+            paymentId = paymentService.createPaymentWithIdempotency(merchantId, request, idempotencyKey, hash);
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.PAYMENT_CREATION_FAILED);
         }
@@ -51,7 +46,6 @@ public class PaymentOrchestratorService {
             handleCompensationFailure(paymentId, e);
             throw new BusinessException(ErrorCode.AUTHORIZATION_START_FAILED, paymentId.getValue());
         }
-
         return paymentId;
     }
 

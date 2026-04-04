@@ -1,6 +1,7 @@
 package com.example.pg.payment.presentation;
 
 import com.example.pg.common.config.filter.MerchantAuthFilter;
+import com.example.pg.idempotency.util.IdempotencyKeyUtil;
 import com.example.pg.payment.application.PaymentOrchestratorService;
 import com.example.pg.payment.application.PaymentService;
 import com.example.pg.payment.domain.vo.PaymentId;
@@ -18,8 +19,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -52,17 +56,21 @@ public class PaymentController {
      * - 트랜잭션 1: 결제 객체 생성 → READY. 실패 시 4xx/5xx.
      * - 트랜잭션 2: 결제 승인 요청 → AUTHORIZING. 실패 시 4xx/5xx.
      * - 이후 비동기로 카드사 응답 후 AUTHORIZED/FAILED 및 웹훅.
+     * 선택 헤더 {@code Idempotency-Key}: 동일 가맹점·동일 키·동일 요청 본문 지문이면 기존 {@code paymentId}로 응답.
      * 응답: HTTP CREATED + paymentId (두 트랜잭션 모두 성공 시).
      */
     @PostMapping
     public ResponseEntity<CreatePaymentResponse> createPayment(
             @RequestAttribute(MerchantAuthFilter.MERCHANT_ID_ATTRIBUTE) String merchantId,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKeyHeader,
             @Valid @RequestBody CreatePaymentRequest request
     ) {
         log.debug("[Payment] API createPayment merchantId={} amount={}", merchantId, request.amount());
+        String idempotencyKey = IdempotencyKeyUtil.normalizeIdempotencyKey(idempotencyKeyHeader);
         PaymentId paymentId = paymentOrchestratorService.createPaymentAndStartAuthorization(
                 merchantId,
-                request
+                request,
+                idempotencyKey
         );
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new CreatePaymentResponse(paymentId.getValue()));
@@ -71,6 +79,7 @@ public class PaymentController {
     /**
      * 같은 결제로 승인만 재시도 (Tx2만 실행). READY 상태일 때만 호출 가능.
      * E030(승인 요청 실패) 응답 후 가맹점 프론트에서 "승인만 재시도" 시 이 API 사용.
+     * 삭제 예정
      */
     @PostMapping("/{paymentId}/authorize")
     public ResponseEntity<Void> startAuthorization(

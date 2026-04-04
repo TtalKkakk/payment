@@ -42,6 +42,8 @@ public enum ErrorCode {
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "E002", "결제를 찾을 수 없습니다. (paymentId=%s)"),
     PAYMENT_ID_INVALID(HttpStatus.BAD_REQUEST, "E036", "결제 ID가 올바르지 않습니다."),
     PAYMENT_INVALID_STATUS(HttpStatus.CONFLICT, "E020", "결제 상태 오류. (%s)"),
+    IDEMPOTENCY_KEY_INVALID(HttpStatus.BAD_REQUEST, "E044", "Idempotency-Key는 1자 이상 128자 이하여야 합니다."),
+    IDEMPOTENCY_KEY_CONFLICT(HttpStatus.CONFLICT, "E043", "동일 멱등성 키로 서로 다른 결제 요청을 보낼 수 없습니다. (key=%s)"),
     PAYMENT_AMOUNT_INVALID(HttpStatus.BAD_REQUEST, "E016", "결제 금액은 0보다 커야 합니다. (amount=%s)"),
     BILLING_KEY_REQUIRED(HttpStatus.BAD_REQUEST, "E017", "결제 승인을 위해 빌링키가 필요합니다."),
 
@@ -57,7 +59,7 @@ public enum ErrorCode {
     /** 결제 생성 실패 (Tx1 실패). 가맹점: "다시 결제하기" 안내 */
     PAYMENT_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E029", "결제 접수에 실패했습니다. 다시 시도해 주세요."),
     /** 승인 요청 실패 (Tx2 실패). 가맹점: "다시 결제하기" 또는 "같은 결제로 승인만 재시도" 안내 */
-    AUTHORIZATION_START_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E030", "결제는 접수됐으나 승인 요청 전송에 실패했습니다. 다시 시도하거나 같은 결제로 승인만 재시도해 주세요."),
+    AUTHORIZATION_START_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "E030", "결제는 접수됐으나 승인 요청 전송에 실패했습니다. 다시 시도해 주세요"),
 
     // ----- Receipt 도메인 -----
     RECEIPT_NOT_FOUND(HttpStatus.NOT_FOUND, "E040", "영수증을 찾을 수 없습니다. (receiptId=%s)"),

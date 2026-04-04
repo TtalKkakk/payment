@@ -42,7 +42,6 @@ public class PaymentAuthorizationProcessor {
         processLock.runWithAuthorizeLock(paymentIdValue, () -> {
             PaymentId paymentId = PaymentId.from(paymentIdValue);
             paymentRepository.load(paymentId).ifPresent(payment ->
-
                     runAuthorization(paymentIdValue, billingKey, payment));
         });
     }
