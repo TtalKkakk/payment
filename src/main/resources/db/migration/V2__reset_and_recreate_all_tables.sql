@@ -135,7 +135,7 @@ CREATE TABLE retry_jobs (
 
 -- 초기 데이터
 INSERT INTO card_companies (id, code, name, base_url, status, display_order)
-VALUES (UUID(), 'CARD_COMPANY_A', '카드사A', 'http://3.35.166.15', 'ACTIVE', 1);
+VALUES (UUID(), 'CARD_COMPANY_A', '카드사A', 'http://3.35.166.15:8080', 'ACTIVE', 1);
 
 -- idempotency_keys (범용 이름·resource_id 컬럼으로 최초 생성)
 CREATE TABLE idempotency_keys (
