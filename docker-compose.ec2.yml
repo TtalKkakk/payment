@@ -19,6 +19,17 @@ services:
     volumes:
       - redis_data:/data
 
+  mysql-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysql-exporter
+    ports:
+      - "9104:9104"
+    environment:
+      DATA_SOURCE_NAME: "root:${MYSQL_ROOT_PASSWORD}@(mysql:3306)/pg"
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
   pg:
     # Jenkins에서 빌드 후 `docker save/load`로 EC2에 올린 로컬 이미지 태그
     image: pg-app:latest
