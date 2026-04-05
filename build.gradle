@@ -44,6 +44,7 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	implementation 'org.springframework.boot:spring-boot-flyway'
 	implementation 'org.flywaydb:flyway-core'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
 	runtimeOnly 'org.flywaydb:flyway-mysql'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	annotationProcessor 'org.projectlombok:lombok'

@@ -46,7 +46,8 @@ logs/
 .env.*
 
 # k6 load-test scripts (local only)
-scripts/k6/
+k6/
+prometheus/
 
 src/main/resources/application.yml
 src/main/resources/application-test.yml
@@ -55,3 +56,4 @@ src/main/resources/application-prod.yml
 deploy.env.example
 keypair1.pem
 pg-app.tar
+docker-compose.monitoring.yml
