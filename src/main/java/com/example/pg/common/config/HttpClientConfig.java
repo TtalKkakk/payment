@@ -1,8 +1,8 @@
 package com.example.pg.common.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
@@ -11,8 +11,10 @@ import org.springframework.web.client.RestTemplate;
 public class HttpClientConfig {
 
     @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
+    public RestTemplate restTemplate(ObservationRegistry observationRegistry) {
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.setObservationRegistry(observationRegistry);
+        return restTemplate;
     }
 
     /**
