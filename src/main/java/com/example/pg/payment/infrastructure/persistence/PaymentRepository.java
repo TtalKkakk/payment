@@ -28,6 +28,17 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
     }
 
     /**
+     * paymentId로 단건 조회 + cardCompany JOIN FETCH.
+     * open-in-view=false 환경에서 트랜잭션 외부에서 cardCompany를 접근해야 할 때 사용.
+     */
+    @Query("SELECT p FROM Payment p JOIN FETCH p.cardCompany WHERE p.id = :id")
+    Optional<Payment> findByIdWithCardCompany(@Param("id") String id);
+
+    default Optional<Payment> loadWithCardCompany(PaymentId paymentId) {
+        return findByIdWithCardCompany(paymentId.getValue());
+    }
+
+    /**
      * 가맹점별 결제 단건 조회. (GET /payments/{id} - 해당 가맹점 소유만 허용)
      */
     Optional<Payment> findByMerchantIdAndId(PaymentMerchantId merchantId, String id);
